@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EchoMind | AI情绪成长教练</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="hero">
+        <nav class="topbar">
+          <div class="brand">
+            <span class="brand-mark">E</span>
+            <span>EchoMind</span>
+          </div>
+          <button class="ghost-button">预约体验</button>
+        </nav>
+
+        <div class="hero-grid">
+          <section class="hero-copy">
+            <p class="eyebrow">AI Emotion Growth Coach</p>
+            <h1>先理解自己，再理解情绪，最后把力量带回生活</h1>
+            <p class="hero-text">
+              通过荣格理论、九型人格、MBTI、毕比模型与 socionics 的多维自我认知，
+              为每位用户建立更贴近真实内心的成长画像，再用匹配的陪伴风格帮助他们梳理情绪、
+              回到平静，并找到下一步行动。
+            </p>
+            <div class="hero-actions">
+              <a href="#journey" class="primary-button">开始自我探索</a>
+              <a href="#coach" class="secondary-button">查看教练演示</a>
+            </div>
+          </section>
+
+          <aside class="hero-card">
+            <p class="card-title">情绪成长路径</p>
+            <div class="path-step">
+              <span>01</span>
+              <div>
+                <h3>认识自己</h3>
+                <p>多理论交叉测评，建立初步人格与认知风格画像。</p>
+              </div>
+            </div>
+            <div class="path-step">
+              <span>02</span>
+              <div>
+                <h3>理解情绪</h3>
+                <p>从快乐、悲伤、厌恶、恐惧、愤怒五个基础情绪做结构化拆解。</p>
+              </div>
+            </div>
+            <div class="path-step">
+              <span>03</span>
+              <div>
+                <h3>回到行动</h3>
+                <p>结合用户画像给出更适合的安抚方式、觉察问题与微行动建议。</p>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </header>
+
+      <main>
+        <section class="section intro-strip">
+          <div>
+            <p class="strip-label">为什么用户会留下来</p>
+            <h2>它不是“统一回复模板”，而是“先画像，再陪伴”</h2>
+          </div>
+          <div class="strip-points">
+            <article>
+              <strong>多维测评融合</strong>
+              <p>把人格系统当成理解语言，而不是给用户贴标签。</p>
+            </article>
+            <article>
+              <strong>风格自适应</strong>
+              <p>理性型、敏感型、行动型用户会收到不同语气与节奏的回应。</p>
+            </article>
+            <article>
+              <strong>从平静到行动</strong>
+              <p>不止安慰，更帮助用户找到今天能做的一小步。</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="section assessment" id="journey">
+          <div class="section-heading">
+            <p class="eyebrow">Step 1</p>
+            <h2>建立你的情绪成长画像</h2>
+            <p>
+              这里用一个简化版体验原型来模拟正式测评。真实产品可以替换成完整题库与评分系统。
+            </p>
+          </div>
+
+          <div class="assessment-layout">
+            <form class="assessment-form" id="profile-form">
+              <label>
+                <span>你更倾向于如何恢复能量？</span>
+                <select name="energy">
+                  <option value="inner">独处整理自己</option>
+                  <option value="social">与人连接和表达</option>
+                </select>
+              </label>
+
+              <label>
+                <span>面对压力时，你更容易先出现什么反应？</span>
+                <select name="stress">
+                  <option value="control">想把事情重新控制住</option>
+                  <option value="withdraw">先退回自己的内心世界</option>
+                  <option value="seek_support">想找人倾诉和确认</option>
+                </select>
+              </label>
+
+              <label>
+                <span>你做决定时更依赖什么？</span>
+                <select name="decision">
+                  <option value="logic">逻辑与结构</option>
+                  <option value="values">内在价值与感受</option>
+                  <option value="harmony">关系与氛围</option>
+                </select>
+              </label>
+
+              <label>
+                <span>哪一句最像你？</span>
+                <select name="motivation">
+                  <option value="growth">我想成为更完整、更真实的人</option>
+                  <option value="security">我最需要安全感和确定感</option>
+                  <option value="impact">我希望推进事情、创造结果</option>
+                </select>
+              </label>
+
+              <label>
+                <span>你的当前情绪关键词</span>
+                <div class="chips" id="emotion-chips">
+                  <button type="button" class="chip selected" data-emotion="焦虑">焦虑</button>
+                  <button type="button" class="chip" data-emotion="委屈">委屈</button>
+                  <button type="button" class="chip" data-emotion="愤怒">愤怒</button>
+                  <button type="button" class="chip" data-emotion="麻木">麻木</button>
+                  <button type="button" class="chip" data-emotion="失望">失望</button>
+                  <button type="button" class="chip" data-emotion="期待">期待</button>
+                </div>
+              </label>
+
+              <button type="submit" class="primary-button wide">生成我的成长画像</button>
+            </form>
+
+            <aside class="profile-card">
+              <p class="card-title">当前画像预览</p>
+              <div id="profile-result" class="profile-result">
+                <h3>观察型内省者</h3>
+                <p>
+                  你可能偏向先在内在世界整理感受，再决定是否表达出来。教练会采用温和、结构化、低压迫感的对话风格。
+                </p>
+                <ul>
+                  <li>可能的 MBTI 倾向: INFJ / INFP / INTJ</li>
+                  <li>九型关注点: 安全、意义、自我一致性</li>
+                  <li>推荐陪伴风格: 温柔映照 + 结构澄清</li>
+                </ul>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <section class="section coach" id="coach">
+          <div class="section-heading">
+            <p class="eyebrow">Step 2</p>
+            <h2>输入情绪与事件，获得有画像感知的陪伴式回复</h2>
+            <p>
+              用户先选择当前主情绪，再描述发生了什么，系统会拆解基础情绪组成，并生成更贴合用户风格的回应。
+            </p>
+          </div>
+
+          <div class="coach-layout">
+            <div class="chat-panel">
+              <div class="panel-header">
+                <h3>情绪输入</h3>
+                <span class="panel-tag">实时分析原型</span>
+              </div>
+
+              <div class="mood-picker" id="mood-picker">
+                <button type="button" class="mood active" data-mood="焦虑">焦虑</button>
+                <button type="button" class="mood" data-mood="悲伤">悲伤</button>
+                <button type="button" class="mood" data-mood="愤怒">愤怒</button>
+                <button type="button" class="mood" data-mood="失落">失落</button>
+                <button type="button" class="mood" data-mood="开心">开心</button>
+              </div>
+
+              <label class="textarea-label">
+                <span>发生了什么？</span>
+                <textarea
+                  id="story-input"
+                  placeholder="比如：今天开会时被领导否定，我表面很平静，但回家后一直反复想这件事，越想越难受。"
+                ></textarea>
+              </label>
+
+              <button id="analyze-button" class="primary-button wide">分析情绪并生成回复</button>
+            </div>
+
+            <div class="insights-panel">
+              <div class="analysis-card">
+                <p class="card-title">基础情绪组成</p>
+                <div class="emotion-bars" id="emotion-bars"></div>
+              </div>
+
+              <div class="analysis-card">
+                <p class="card-title">AI 教练回应</p>
+                <div id="coach-response" class="coach-response">
+                  你现在的情绪里可能同时有恐惧和悲伤: 恐惧来自“我是不是不够好”的担心，
+                  悲伤来自“我明明很努力却没有被理解”的失落。先不用急着解决全部问题，我们先一起把它说清楚。
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="section architecture">
+          <div class="section-heading">
+            <p class="eyebrow">Step 3</p>
+            <h2>面向真实产品的系统结构</h2>
+          </div>
+          <div class="architecture-grid">
+            <article>
+              <h3>画像层</h3>
+              <p>测评题库、评分引擎、人格标签融合、对话风格映射。</p>
+            </article>
+            <article>
+              <h3>情绪分析层</h3>
+              <p>情绪分类、事件抽取、强度评估、五基础情绪比例生成。</p>
+            </article>
+            <article>
+              <h3>教练生成层</h3>
+              <p>基于用户画像、当前事件、情绪比例生成理解、安抚、行动建议三段式回复。</p>
+            </article>
+            <article>
+              <h3>成长追踪层</h3>
+              <p>记录触发模式、常见情绪组合、恢复策略，形成长期成长反馈闭环。</p>
+            </article>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
