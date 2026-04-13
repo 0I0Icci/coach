@@ -23,13 +23,11 @@
       </header>
 
       <section id="home-view" class="view-card view-card-home fade-in is-active">
-        <div class="hero-copy">
-          <p class="intro-text">或者，聊聊最近发生的事</p>
-          <p class="sub-intro-text">我们可以从你当下卡住的地方开始</p>
-        </div>
-
         <div class="hero-panel">
-          <h1>是什么让你现在有点卡住？</h1>
+          <div class="hero-copy">
+            <p class="guide-text">是什么让你现在有点卡住？</p>
+            <p class="guide-text">或者，聊聊最近发生的事</p>
+          </div>
           <button id="start-button" class="primary-button" type="button">开始了解自己</button>
         </div>
       </section>
@@ -43,7 +41,10 @@
 
       <section id="mbti-view" class="view-card view-card-mbti fade-in" aria-hidden="true">
         <div class="mbti-header single-action">
-          <button id="unknown-type-link" class="back-link" type="button">我还不知道我的类型</button>
+          <div class="unknown-type-group">
+            <button id="unknown-type-link" class="back-link" type="button">我还不知道我的类型</button>
+            <p class="helper-text">测试将在新页面打开，完成后可以返回这里继续使用</p>
+          </div>
         </div>
 
         <div id="mbti-grid" class="mbti-grid">
