@@ -1,4 +1,5 @@
-﻿const TEST_URL = "https://totypes.com";
+﻿const API_BASE_URL = window.ECHOMIND_API_BASE_URL || "";
+const TEST_URL = "https://totypes.com";
 
 const communicationQuestions = [
   { id: 1, title: "你被领导批评后，心情很差，你更可能：", options: [
@@ -76,10 +77,10 @@ const communicationQuestions = [
 ];
 
 const resultDescriptions = {
-  "Emotion-first": { label: "共情型", text: "你更需要被理解和情绪支持。我们会用更温和、倾听式的方式和你交流。", opener: "我会先接住你的感受，不急着下结论。你愿意从最近最卡住你的那件事开始说吗？" },
-  "Logic-first": { label: "分析型", text: "你更在意事情被看清和梳理。我们会用更清晰、结构化的方式和你交流。", opener: "我们可以一起把事情拆开来看。你最想先厘清的是发生了什么，还是你现在的感受？" },
-  "Action-first": { label: "行动型", text: "你更希望对话能推动改变。我们会更直接地给出步骤感和行动建议。", opener: "我们可以边聊边找下一步。你现在最希望先解决的是哪一个具体卡点？" },
-  Companion: { label: "陪伴型", text: "你更偏好低压力、陪伴感强的交流。我们会用更轻柔、不逼迫的方式和你交流。", opener: "不用急着说得很完整，我们就从你最想说的一小段开始。" },
+  "Emotion-first": { label: "共情型", text: "你更需要被理解和情绪支持。我们会用更温和、倾听式的方式和你交流。" },
+  "Logic-first": { label: "分析型", text: "你更在意事情被看清和梳理。我们会用更清晰、结构化的方式和你交流。" },
+  "Action-first": { label: "行动型", text: "你更希望对话能推动改变。我们会更直接地给出步骤感和行动建议。" },
+  Companion: { label: "陪伴型", text: "你更偏好低压力、陪伴感强的交流。我们会用更轻柔、不逼迫的方式和你交流。" },
 };
 
 const views = {
@@ -111,12 +112,15 @@ const chatStyleBadge = document.getElementById("chat-style-badge");
 const chatMessages = document.getElementById("chat-messages");
 const chatForm = document.getElementById("chat-form");
 const chatInput = document.getElementById("chat-input");
+const chatSendButton = document.getElementById("chat-send-button");
 
 const appState = {
   mbtiType: "",
   currentQuestionIndex: 0,
   answers: new Array(communicationQuestions.length).fill(null),
   resultKey: "",
+  previousResponseId: "",
+  isWaitingForReply: false,
 };
 
 function showView(viewName) {
@@ -139,12 +143,49 @@ function appendMessage(role, text) {
   chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
+function setChatPending(isPending, label = "发送") {
+  appState.isWaitingForReply = isPending;
+  chatSendButton.disabled = isPending;
+  chatInput.disabled = isPending;
+  chatSendButton.textContent = isPending ? "思考中..." : label;
+}
+
+async function requestAssistantReply({ message = "", opening = false }) {
+  setChatPending(true);
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/chat`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        message,
+        opening,
+        mbtiType: appState.mbtiType,
+        communicationStyle: appState.resultKey,
+        previousResponseId: appState.previousResponseId,
+      }),
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || "AI 服务暂时不可用。请稍后再试。");
+    }
+
+    appState.previousResponseId = data.responseId || appState.previousResponseId;
+    appendMessage("assistant", data.reply);
+  } catch (error) {
+    appendMessage("assistant", `当前无法连接 AI 服务：${error.message}`);
+  } finally {
+    setChatPending(false);
+  }
+}
+
 function seedChat() {
   chatMessages.innerHTML = "";
   const result = resultDescriptions[appState.resultKey];
   chatMbtiBadge.textContent = `MBTI：${appState.mbtiType}`;
   chatStyleBadge.textContent = `风格：${result.label}`;
-  appendMessage("assistant", result.opener);
 }
 
 function handleMbtiSelection(type) {
@@ -153,7 +194,6 @@ function handleMbtiSelection(type) {
     button.classList.toggle("is-selected", button.dataset.type === type);
   });
   selectionFeedback.textContent = `已选择类型：${type}`;
-  console.log("Selected MBTI:", type);
   appState.currentQuestionIndex = 0;
   appState.answers = new Array(communicationQuestions.length).fill(null);
   renderQuestion();
@@ -171,7 +211,6 @@ function goToNextQuestionOrResult() {
     showResult();
     return;
   }
-
   appState.currentQuestionIndex += 1;
   renderQuestion();
 }
@@ -259,27 +298,22 @@ nextQuestionButton.addEventListener("click", () => {
   renderQuestion();
 });
 
-startChatButton.addEventListener("click", () => {
+startChatButton.addEventListener("click", async () => {
   calculateResult();
+  appState.previousResponseId = "";
   seedChat();
   showView("chat");
+  await requestAssistantReply({ opening: true });
 });
 
-chatForm.addEventListener("submit", (event) => {
+chatForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const text = chatInput.value.trim();
-  if (!text) return;
+  if (!text || appState.isWaitingForReply) return;
 
   appendMessage("user", text);
-  console.log("Pending AI request:", {
-    mbti: appState.mbtiType,
-    communicationStyle: appState.resultKey,
-    message: text,
-  });
-
-  const result = resultDescriptions[appState.resultKey];
-  appendMessage("assistant", `我已经收到你的这段话。当前会按${result.label}的方式继续回应你，后续这里可以直接接入真实 AI 能力。`);
   chatInput.value = "";
+  await requestAssistantReply({ message: text });
 });
 
 showView("home");
