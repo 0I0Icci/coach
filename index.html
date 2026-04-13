@@ -73,6 +73,37 @@
           还没有选择类型
         </div>
       </section>
+
+      <section id="style-test-view" class="view-card view-card-test fade-in" aria-hidden="true">
+        <div class="test-intro">
+          <h2>我们想先更了解你一点</h2>
+          <p class="helper-text centered-helper">没有对错，只是帮助我们用更适合你的方式和你交流</p>
+        </div>
+
+        <div id="question-card" class="question-card">
+          <div class="question-meta">
+            <span id="question-progress">第 1 题 / 共 12 题</span>
+            <span id="selected-mbti">MBTI：未选择</span>
+          </div>
+          <div class="question-body">
+            <h3 id="question-title"></h3>
+            <div id="question-options" class="question-options"></div>
+          </div>
+        </div>
+
+        <div class="test-actions">
+          <button id="next-question-button" class="primary-button" type="button" disabled>下一题</button>
+        </div>
+      </section>
+
+      <section id="style-result-view" class="view-card view-card-result fade-in" aria-hidden="true">
+        <div class="result-panel">
+          <p class="eyebrow">沟通风格结果</p>
+          <h2 id="result-title">你的沟通偏好：</h2>
+          <p id="result-description" class="result-description"></p>
+          <button id="start-chat-button" class="primary-button" type="button">开始聊一聊</button>
+        </div>
+      </section>
     </main>
 
     <script src="./app.js"></script>

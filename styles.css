@@ -126,6 +126,12 @@ button {
   text-align: left;
 }
 
+.view-card-test,
+.view-card-result {
+  min-height: min(76vh, 760px);
+  align-content: center;
+}
+
 .hero-copy {
   display: grid;
   gap: 10px;
@@ -147,14 +153,23 @@ button {
   min-height: 44vh;
 }
 
+h2 {
+  margin: 0;
+  font-family: "Outfit", sans-serif;
+  font-weight: 600;
+  line-height: 1.15;
+  font-size: clamp(2rem, 4vw, 3.1rem);
+}
+
 .primary-button,
 .option-button,
 .back-link,
-.mbti-card {
+.mbti-card,
+.question-option {
   border: none;
   border-radius: 999px;
   cursor: pointer;
-  transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease, border-color 180ms ease;
+  transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease, border-color 180ms ease, opacity 180ms ease;
 }
 
 .primary-button,
@@ -169,16 +184,24 @@ button {
   box-shadow: 0 18px 28px rgba(100, 143, 188, 0.22);
 }
 
+.primary-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
 .option-button {
   background: var(--surface-strong);
   color: var(--ink);
   border: 1px solid var(--line);
 }
 
-.primary-button:hover,
+.primary-button:hover:not(:disabled),
 .option-button:hover,
 .back-link:hover,
-.mbti-card:hover {
+.mbti-card:hover,
+.question-option:hover {
   transform: translateY(-2px);
 }
 
@@ -221,6 +244,11 @@ button {
   line-height: 1.7;
 }
 
+.centered-helper {
+  margin: 0 auto;
+  max-width: 34ch;
+}
+
 .mbti-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -257,7 +285,8 @@ button {
   color: var(--blue-deep);
 }
 
-.mbti-card.is-selected {
+.mbti-card.is-selected,
+.question-option.is-selected {
   box-shadow: 0 18px 26px rgba(81, 112, 145, 0.18);
   border-color: rgba(40, 70, 97, 0.22);
   transform: translateY(-2px) scale(1.01);
@@ -269,6 +298,81 @@ button {
   background: rgba(255, 255, 255, 0.6);
   color: var(--muted);
   text-align: center;
+}
+
+.test-intro,
+.result-panel {
+  display: grid;
+  gap: 12px;
+  justify-items: center;
+}
+
+.question-card {
+  display: grid;
+  gap: 24px;
+  padding: clamp(24px, 4vw, 34px);
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.64);
+  border: 1px solid rgba(104, 137, 171, 0.16);
+  min-height: 420px;
+  align-content: start;
+}
+
+.question-card.is-switching {
+  animation: fadeCard 220ms ease;
+}
+
+.question-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.question-body {
+  display: grid;
+  gap: 20px;
+}
+
+.question-body h3 {
+  margin: 0;
+  font-family: "Noto Sans SC", sans-serif;
+  font-size: clamp(1.3rem, 2vw, 1.6rem);
+  line-height: 1.7;
+  text-align: left;
+}
+
+.question-options {
+  display: grid;
+  gap: 14px;
+}
+
+.question-option {
+  padding: 16px 18px;
+  border-radius: 22px;
+  background: var(--surface-strong);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  text-align: left;
+}
+
+.question-option strong {
+  display: inline-block;
+  margin-right: 10px;
+  font-family: "Outfit", sans-serif;
+}
+
+.test-actions {
+  display: grid;
+  justify-items: center;
+}
+
+.result-description {
+  margin: 0;
+  max-width: 34ch;
+  color: var(--muted);
+  line-height: 1.9;
 }
 
 .fade-in {
@@ -287,9 +391,26 @@ button {
   }
 }
 
+@keyframes fadeCard {
+  from {
+    opacity: 0.3;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @media (max-width: 800px) {
   .mbti-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .question-meta {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
 
@@ -310,5 +431,9 @@ button {
 
   .mbti-card {
     min-height: 76px;
+  }
+
+  .question-card {
+    min-height: 0;
   }
 }
