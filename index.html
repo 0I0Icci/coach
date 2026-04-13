@@ -104,6 +104,30 @@
           <button id="start-chat-button" class="primary-button" type="button">开始聊一聊</button>
         </div>
       </section>
+
+      <section id="chat-view" class="view-card view-card-chat fade-in" aria-hidden="true">
+        <div class="chat-header">
+          <div>
+            <p class="eyebrow">对话已开始</p>
+            <h2>现在，我们可以慢慢聊</h2>
+          </div>
+          <div class="chat-badges">
+            <span id="chat-mbti-badge" class="chat-badge">MBTI：未选择</span>
+            <span id="chat-style-badge" class="chat-badge">风格：未识别</span>
+          </div>
+        </div>
+
+        <div id="chat-messages" class="chat-messages" aria-live="polite"></div>
+
+        <form id="chat-form" class="chat-form">
+          <label class="chat-input-wrap" for="chat-input">
+            <textarea id="chat-input" placeholder="你可以从最近让你卡住的一件事开始说起..." rows="4"></textarea>
+          </label>
+          <div class="chat-actions">
+            <button id="chat-send-button" class="primary-button" type="submit">发送</button>
+          </div>
+        </form>
+      </section>
     </main>
 
     <script src="./app.js"></script>

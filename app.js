@@ -1,144 +1,100 @@
 ﻿const TEST_URL = "https://totypes.com";
 
 const communicationQuestions = [
-  {
-    id: 1,
-    title: "你被领导批评后，心情很差，你更可能：",
-    options: [
-      { key: "A", text: "找人聊一聊，吐槽一下", style: "Emotion-first" },
-      { key: "B", text: "自己消化，不太想说", style: "Logic-first" },
-      { key: "C", text: "一边想一边反复琢磨", style: "Action-first" },
-      { key: "D", text: "尽量不去想，转移注意力", style: "Companion" },
-    ],
-  },
-  {
-    id: 2,
-    title: "当你情绪低落时，你更希望别人：",
-    options: [
-      { key: "A", text: "安慰你、理解你", style: "Emotion-first" },
-      { key: "B", text: "帮你分析问题", style: "Logic-first" },
-      { key: "C", text: "给你具体建议", style: "Action-first" },
-      { key: "D", text: "陪你聊点别的", style: "Companion" },
-    ],
-  },
-  {
-    id: 3,
-    title: "当别人误解你时，你通常会：",
-    options: [
-      { key: "A", text: "立刻解释清楚", style: "Emotion-first" },
-      { key: "B", text: "有点难受但不太说", style: "Logic-first" },
-      { key: "C", text: "反复想这件事", style: "Action-first" },
-      { key: "D", text: "觉得算了", style: "Companion" },
-    ],
-  },
-  {
-    id: 4,
-    title: "如果你和AI聊天，你更希望它：",
-    options: [
-      { key: "A", text: "很理解你、会共情", style: "Emotion-first" },
-      { key: "B", text: "帮你分析问题", style: "Logic-first" },
-      { key: "C", text: "给你行动建议", style: "Action-first" },
-      { key: "D", text: "轻松聊天就好", style: "Companion" },
-    ],
-  },
-  {
-    id: 5,
-    title: "当你倾诉问题时，你更反感：",
-    options: [
-      { key: "A", text: "被忽视情绪", style: "Emotion-first" },
-      { key: "B", text: "被讲大道理", style: "Logic-first" },
-      { key: "C", text: "没有实际建议", style: "Action-first" },
-      { key: "D", text: "对话太沉重", style: "Companion" },
-    ],
-  },
-  {
-    id: 6,
-    title: "你更喜欢别人：",
-    options: [
-      { key: "A", text: "慢慢听你说", style: "Emotion-first" },
-      { key: "B", text: "快速抓重点", style: "Logic-first" },
-      { key: "C", text: "帮你理清逻辑", style: "Action-first" },
-      { key: "D", text: "让你轻松一点", style: "Companion" },
-    ],
-  },
-  {
-    id: 7,
-    title: "面对一件困难的任务，你更可能：",
-    options: [
-      { key: "A", text: "想很多才开始", style: "Emotion-first" },
-      { key: "B", text: "先做再说", style: "Logic-first" },
-      { key: "C", text: "一直拖着", style: "Action-first" },
-      { key: "D", text: "看心情", style: "Companion" },
-    ],
-  },
-  {
-    id: 8,
-    title: "当你犹豫一个选择时，你更希望：",
-    options: [
-      { key: "A", text: "被理解你的纠结", style: "Emotion-first" },
-      { key: "B", text: "帮你分析利弊", style: "Logic-first" },
-      { key: "C", text: "给你一个建议", style: "Action-first" },
-      { key: "D", text: "让你自己慢慢想", style: "Companion" },
-    ],
-  },
-  {
-    id: 9,
-    title: "当你状态不好时，你更希望AI：",
-    options: [
-      { key: "A", text: "陪你慢慢聊", style: "Emotion-first" },
-      { key: "B", text: "帮你理清问题", style: "Logic-first" },
-      { key: "C", text: "推你行动", style: "Action-first" },
-      { key: "D", text: "不打扰你", style: "Companion" },
-    ],
-  },
-  {
-    id: 10,
-    title: "在人际关系中，你更容易：",
-    options: [
-      { key: "A", text: "过度在意别人感受", style: "Emotion-first" },
-      { key: "B", text: "讲道理", style: "Logic-first" },
-      { key: "C", text: "回避冲突", style: "Action-first" },
-      { key: "D", text: "看情况", style: "Companion" },
-    ],
-  },
-  {
-    id: 11,
-    title: "当你和别人发生冲突，你更倾向：",
-    options: [
-      { key: "A", text: "修复关系", style: "Emotion-first" },
-      { key: "B", text: "讲清对错", style: "Logic-first" },
-      { key: "C", text: "避免冲突", style: "Action-first" },
-      { key: "D", text: "顺其自然", style: "Companion" },
-    ],
-  },
-  {
-    id: 12,
-    title: "如果你现在很难受，你更希望AI第一句话是：",
-    options: [
-      { key: "A", text: "“听起来你真的很难受”", style: "Emotion-first" },
-      { key: "B", text: "“我们一起看看发生了什么”", style: "Logic-first" },
-      { key: "C", text: "“你可以试试这样做”", style: "Action-first" },
-      { key: "D", text: "“想聊点别的吗？”", style: "Companion" },
-    ],
-  },
+  { id: 1, title: "你被领导批评后，心情很差，你更可能：", options: [
+    { key: "A", text: "找人聊一聊，吐槽一下", style: "Emotion-first" },
+    { key: "B", text: "自己消化，不太想说", style: "Logic-first" },
+    { key: "C", text: "一边想一边反复琢磨", style: "Action-first" },
+    { key: "D", text: "尽量不去想，转移注意力", style: "Companion" },
+  ]},
+  { id: 2, title: "当你情绪低落时，你更希望别人：", options: [
+    { key: "A", text: "安慰你、理解你", style: "Emotion-first" },
+    { key: "B", text: "帮你分析问题", style: "Logic-first" },
+    { key: "C", text: "给你具体建议", style: "Action-first" },
+    { key: "D", text: "陪你聊点别的", style: "Companion" },
+  ]},
+  { id: 3, title: "当别人误解你时，你通常会：", options: [
+    { key: "A", text: "立刻解释清楚", style: "Emotion-first" },
+    { key: "B", text: "有点难受但不太说", style: "Logic-first" },
+    { key: "C", text: "反复想这件事", style: "Action-first" },
+    { key: "D", text: "觉得算了", style: "Companion" },
+  ]},
+  { id: 4, title: "如果你和AI聊天，你更希望它：", options: [
+    { key: "A", text: "很理解你、会共情", style: "Emotion-first" },
+    { key: "B", text: "帮你分析问题", style: "Logic-first" },
+    { key: "C", text: "给你行动建议", style: "Action-first" },
+    { key: "D", text: "轻松聊天就好", style: "Companion" },
+  ]},
+  { id: 5, title: "当你倾诉问题时，你更反感：", options: [
+    { key: "A", text: "被忽视情绪", style: "Emotion-first" },
+    { key: "B", text: "被讲大道理", style: "Logic-first" },
+    { key: "C", text: "没有实际建议", style: "Action-first" },
+    { key: "D", text: "对话太沉重", style: "Companion" },
+  ]},
+  { id: 6, title: "你更喜欢别人：", options: [
+    { key: "A", text: "慢慢听你说", style: "Emotion-first" },
+    { key: "B", text: "快速抓重点", style: "Logic-first" },
+    { key: "C", text: "帮你理清逻辑", style: "Action-first" },
+    { key: "D", text: "让你轻松一点", style: "Companion" },
+  ]},
+  { id: 7, title: "面对一件困难的任务，你更可能：", options: [
+    { key: "A", text: "想很多才开始", style: "Emotion-first" },
+    { key: "B", text: "先做再说", style: "Logic-first" },
+    { key: "C", text: "一直拖着", style: "Action-first" },
+    { key: "D", text: "看心情", style: "Companion" },
+  ]},
+  { id: 8, title: "当你犹豫一个选择时，你更希望：", options: [
+    { key: "A", text: "被理解你的纠结", style: "Emotion-first" },
+    { key: "B", text: "帮你分析利弊", style: "Logic-first" },
+    { key: "C", text: "给你一个建议", style: "Action-first" },
+    { key: "D", text: "让你自己慢慢想", style: "Companion" },
+  ]},
+  { id: 9, title: "当你状态不好时，你更希望AI：", options: [
+    { key: "A", text: "陪你慢慢聊", style: "Emotion-first" },
+    { key: "B", text: "帮你理清问题", style: "Logic-first" },
+    { key: "C", text: "推你行动", style: "Action-first" },
+    { key: "D", text: "不打扰你", style: "Companion" },
+  ]},
+  { id: 10, title: "在人际关系中，你更容易：", options: [
+    { key: "A", text: "过度在意别人感受", style: "Emotion-first" },
+    { key: "B", text: "讲道理", style: "Logic-first" },
+    { key: "C", text: "回避冲突", style: "Action-first" },
+    { key: "D", text: "看情况", style: "Companion" },
+  ]},
+  { id: 11, title: "当你和别人发生冲突，你更倾向：", options: [
+    { key: "A", text: "修复关系", style: "Emotion-first" },
+    { key: "B", text: "讲清对错", style: "Logic-first" },
+    { key: "C", text: "避免冲突", style: "Action-first" },
+    { key: "D", text: "顺其自然", style: "Companion" },
+  ]},
+  { id: 12, title: "如果你现在很难受，你更希望AI第一句话是：", options: [
+    { key: "A", text: "“听起来你真的很难受”", style: "Emotion-first" },
+    { key: "B", text: "“我们一起看看发生了什么”", style: "Logic-first" },
+    { key: "C", text: "“你可以试试这样做”", style: "Action-first" },
+    { key: "D", text: "“想聊点别的吗？”", style: "Companion" },
+  ]},
 ];
 
 const resultDescriptions = {
   "Emotion-first": {
     label: "共情型",
     text: "你更需要被理解和情绪支持。我们会用更温和、倾听式的方式和你交流。",
+    opener: "我会先接住你的感受，不急着下结论。你愿意从最近最卡住你的那件事开始说吗？",
   },
   "Logic-first": {
     label: "分析型",
     text: "你更在意事情被看清和梳理。我们会用更清晰、结构化的方式和你交流。",
+    opener: "我们可以一起把事情拆开来看。你最想先厘清的是发生了什么，还是你现在的感受？",
   },
   "Action-first": {
     label: "行动型",
     text: "你更希望对话能推动改变。我们会更直接地给出步骤感和行动建议。",
+    opener: "我们可以边聊边找下一步。你现在最希望先解决的是哪一个具体卡点？",
   },
   Companion: {
     label: "陪伴型",
     text: "你更偏好低压力、陪伴感强的交流。我们会用更轻柔、不逼迫的方式和你交流。",
+    opener: "不用急着说得很完整，我们就从你最想说的一小段开始。",
   },
 };
 
@@ -148,6 +104,7 @@ const views = {
   mbti: document.getElementById("mbti-view"),
   test: document.getElementById("style-test-view"),
   result: document.getElementById("style-result-view"),
+  chat: document.getElementById("chat-view"),
 };
 
 const startButton = document.getElementById("start-button");
@@ -165,11 +122,17 @@ const nextQuestionButton = document.getElementById("next-question-button");
 const resultTitle = document.getElementById("result-title");
 const resultDescription = document.getElementById("result-description");
 const startChatButton = document.getElementById("start-chat-button");
+const chatMbtiBadge = document.getElementById("chat-mbti-badge");
+const chatStyleBadge = document.getElementById("chat-style-badge");
+const chatMessages = document.getElementById("chat-messages");
+const chatForm = document.getElementById("chat-form");
+const chatInput = document.getElementById("chat-input");
 
 const appState = {
   mbtiType: "",
   currentQuestionIndex: 0,
   answers: new Array(communicationQuestions.length).fill(null),
+  resultKey: "",
 };
 
 function showView(viewName) {
@@ -182,6 +145,22 @@ function showView(viewName) {
 
 function openTestSite() {
   window.open(TEST_URL, "_blank", "noopener,noreferrer");
+}
+
+function appendMessage(role, text) {
+  const bubble = document.createElement("div");
+  bubble.className = `chat-bubble ${role}`;
+  bubble.textContent = text;
+  chatMessages.appendChild(bubble);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function seedChat() {
+  chatMessages.innerHTML = "";
+  const result = resultDescriptions[appState.resultKey];
+  chatMbtiBadge.textContent = `MBTI：${appState.mbtiType}`;
+  chatStyleBadge.textContent = `风格：${result.label}`;
+  appendMessage("assistant", result.opener);
 }
 
 function handleMbtiSelection(type) {
@@ -216,11 +195,7 @@ function renderQuestion() {
     .map((option) => {
       const isSelected = currentAnswer && currentAnswer.key === option.key;
       return `
-        <button
-          class="question-option ${isSelected ? "is-selected" : ""}"
-          type="button"
-          data-key="${option.key}"
-        >
+        <button class="question-option ${isSelected ? "is-selected" : ""}" type="button" data-key="${option.key}">
           <strong>${option.key}</strong>${option.text}
         </button>
       `;
@@ -248,14 +223,12 @@ function calculateResult() {
   };
 
   appState.answers.forEach((answer) => {
-    if (answer) {
-      counts[answer.style] += 1;
-    }
+    if (answer) counts[answer.style] += 1;
   });
 
   const sortedEntries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
-  const winner = sortedEntries[0][0];
-  return resultDescriptions[winner];
+  appState.resultKey = sortedEntries[0][0];
+  return resultDescriptions[appState.resultKey];
 }
 
 function showResult() {
@@ -285,9 +258,7 @@ mbtiButtons.forEach((button) => {
 });
 
 nextQuestionButton.addEventListener("click", () => {
-  if (!appState.answers[appState.currentQuestionIndex]) {
-    return;
-  }
+  if (!appState.answers[appState.currentQuestionIndex]) return;
 
   if (appState.currentQuestionIndex === communicationQuestions.length - 1) {
     showResult();
@@ -299,7 +270,26 @@ nextQuestionButton.addEventListener("click", () => {
 });
 
 startChatButton.addEventListener("click", () => {
-  console.log("Start AI chat with style:", calculateResult().label, "MBTI:", appState.mbtiType);
+  calculateResult();
+  seedChat();
+  showView("chat");
+});
+
+chatForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const text = chatInput.value.trim();
+  if (!text) return;
+
+  appendMessage("user", text);
+  console.log("Pending AI request:", {
+    mbti: appState.mbtiType,
+    communicationStyle: appState.resultKey,
+    message: text,
+  });
+
+  const result = resultDescriptions[appState.resultKey];
+  appendMessage("assistant", `我已经收到你的这段话。当前会按${result.label}的方式继续回应你，后续这里可以直接接入真实 AI 能力。`);
+  chatInput.value = "";
 });
 
 showView("home");
