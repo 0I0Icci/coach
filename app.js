@@ -76,26 +76,10 @@ const communicationQuestions = [
 ];
 
 const resultDescriptions = {
-  "Emotion-first": {
-    label: "共情型",
-    text: "你更需要被理解和情绪支持。我们会用更温和、倾听式的方式和你交流。",
-    opener: "我会先接住你的感受，不急着下结论。你愿意从最近最卡住你的那件事开始说吗？",
-  },
-  "Logic-first": {
-    label: "分析型",
-    text: "你更在意事情被看清和梳理。我们会用更清晰、结构化的方式和你交流。",
-    opener: "我们可以一起把事情拆开来看。你最想先厘清的是发生了什么，还是你现在的感受？",
-  },
-  "Action-first": {
-    label: "行动型",
-    text: "你更希望对话能推动改变。我们会更直接地给出步骤感和行动建议。",
-    opener: "我们可以边聊边找下一步。你现在最希望先解决的是哪一个具体卡点？",
-  },
-  Companion: {
-    label: "陪伴型",
-    text: "你更偏好低压力、陪伴感强的交流。我们会用更轻柔、不逼迫的方式和你交流。",
-    opener: "不用急着说得很完整，我们就从你最想说的一小段开始。",
-  },
+  "Emotion-first": { label: "共情型", text: "你更需要被理解和情绪支持。我们会用更温和、倾听式的方式和你交流。", opener: "我会先接住你的感受，不急着下结论。你愿意从最近最卡住你的那件事开始说吗？" },
+  "Logic-first": { label: "分析型", text: "你更在意事情被看清和梳理。我们会用更清晰、结构化的方式和你交流。", opener: "我们可以一起把事情拆开来看。你最想先厘清的是发生了什么，还是你现在的感受？" },
+  "Action-first": { label: "行动型", text: "你更希望对话能推动改变。我们会更直接地给出步骤感和行动建议。", opener: "我们可以边聊边找下一步。你现在最希望先解决的是哪一个具体卡点？" },
+  Companion: { label: "陪伴型", text: "你更偏好低压力、陪伴感强的交流。我们会用更轻柔、不逼迫的方式和你交流。", opener: "不用急着说得很完整，我们就从你最想说的一小段开始。" },
 };
 
 const views = {
@@ -165,18 +149,31 @@ function seedChat() {
 
 function handleMbtiSelection(type) {
   appState.mbtiType = type;
-
   mbtiButtons.forEach((button) => {
     button.classList.toggle("is-selected", button.dataset.type === type);
   });
-
   selectionFeedback.textContent = `已选择类型：${type}`;
   console.log("Selected MBTI:", type);
-
   appState.currentQuestionIndex = 0;
   appState.answers = new Array(communicationQuestions.length).fill(null);
   renderQuestion();
   showView("test");
+}
+
+function updateQuestionNav() {
+  const hasPrevious = appState.currentQuestionIndex > 0;
+  nextQuestionButton.disabled = !hasPrevious;
+  nextQuestionButton.textContent = "回到上一题";
+}
+
+function goToNextQuestionOrResult() {
+  if (appState.currentQuestionIndex === communicationQuestions.length - 1) {
+    showResult();
+    return;
+  }
+
+  appState.currentQuestionIndex += 1;
+  renderQuestion();
 }
 
 function renderQuestion() {
@@ -206,12 +203,11 @@ function renderQuestion() {
     button.addEventListener("click", () => {
       const selectedOption = currentQuestion.options.find((option) => option.key === button.dataset.key);
       appState.answers[appState.currentQuestionIndex] = selectedOption;
-      renderQuestion();
+      goToNextQuestionOrResult();
     });
   });
 
-  nextQuestionButton.disabled = !currentAnswer;
-  nextQuestionButton.textContent = appState.currentQuestionIndex === communicationQuestions.length - 1 ? "查看结果" : "下一题";
+  updateQuestionNav();
 }
 
 function calculateResult() {
@@ -258,14 +254,8 @@ mbtiButtons.forEach((button) => {
 });
 
 nextQuestionButton.addEventListener("click", () => {
-  if (!appState.answers[appState.currentQuestionIndex]) return;
-
-  if (appState.currentQuestionIndex === communicationQuestions.length - 1) {
-    showResult();
-    return;
-  }
-
-  appState.currentQuestionIndex += 1;
+  if (appState.currentQuestionIndex === 0) return;
+  appState.currentQuestionIndex -= 1;
   renderQuestion();
 });
 
