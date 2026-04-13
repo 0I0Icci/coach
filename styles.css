@@ -61,6 +61,12 @@ button {
   gap: 20px;
 }
 
+.top-shell {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+}
+
 .brand {
   display: inline-flex;
   justify-self: center;
@@ -80,6 +86,14 @@ button {
   border-radius: 14px;
   background: linear-gradient(135deg, #9fc0e2, #d2e4f6);
   color: #ffffff;
+}
+
+.eyebrow {
+  margin: 0;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.76rem;
+  color: var(--muted);
 }
 
 .view-card {
@@ -103,34 +117,34 @@ button {
   align-content: center;
 }
 
-.view-intro {
+.view-card-choice {
+  min-height: min(58vh, 520px);
+  align-content: center;
+}
+
+.view-card-mbti {
+  text-align: left;
+}
+
+.hero-copy {
   display: grid;
   gap: 10px;
   justify-items: center;
 }
 
-.view-intro.compact {
-  gap: 8px;
-}
-
-.view-intro.narrow {
-  max-width: 620px;
-  margin: 0 auto;
-}
-
-.eyebrow {
+.intro-text,
+.sub-intro-text {
   margin: 0;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  font-size: 0.76rem;
   color: var(--muted);
+  line-height: 1.7;
 }
 
 .intro-text {
-  margin: 0;
   font-size: 0.98rem;
-  line-height: 1.7;
-  color: var(--muted);
+}
+
+.sub-intro-text {
+  font-size: 0.9rem;
 }
 
 .hero-panel {
@@ -138,30 +152,21 @@ button {
   align-content: center;
   justify-items: center;
   gap: 26px;
-  min-height: 42vh;
+  min-height: 44vh;
 }
 
-h1,
-h2 {
+h1 {
   margin: 0;
   font-family: "Outfit", sans-serif;
   font-weight: 600;
   line-height: 1.08;
-}
-
-h1 {
   font-size: clamp(2.8rem, 7vw, 5.2rem);
   max-width: 11ch;
-}
-
-h2 {
-  font-size: clamp(2rem, 4vw, 3rem);
 }
 
 .primary-button,
 .option-button,
 .back-link,
-.subtle-link,
 .mbti-card {
   border: none;
   border-radius: 999px;
@@ -190,7 +195,6 @@ h2 {
 .primary-button:hover,
 .option-button:hover,
 .back-link:hover,
-.subtle-link:hover,
 .mbti-card:hover {
   transform: translateY(-2px);
 }
@@ -198,35 +202,26 @@ h2 {
 .stack-actions {
   display: grid;
   justify-items: center;
-  gap: 14px;
+  gap: 16px;
   width: 100%;
 }
 
-.helper-text {
-  margin: 6px 0 0;
-  max-width: 28ch;
-  color: var(--muted);
-  font-size: 0.92rem;
-  line-height: 1.7;
+.compact-actions {
+  max-width: 420px;
+  margin: 0 auto;
 }
 
 .mbti-header {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
-  gap: 12px;
 }
 
-.back-link,
-.subtle-link {
+.back-link {
   padding: 10px 16px;
   background: rgba(255, 255, 255, 0.66);
   color: var(--ink);
   border: 1px solid var(--line);
-}
-
-.subtle-link {
-  color: var(--muted);
 }
 
 .mbti-grid {
@@ -276,6 +271,7 @@ h2 {
   border-radius: 20px;
   background: rgba(255, 255, 255, 0.6);
   color: var(--muted);
+  text-align: center;
 }
 
 .fade-in {
@@ -297,11 +293,6 @@ h2 {
 @media (max-width: 800px) {
   .mbti-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .mbti-header {
-    flex-direction: column;
-    align-items: stretch;
   }
 }
 

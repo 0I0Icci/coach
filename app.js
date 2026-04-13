@@ -10,7 +10,6 @@ const startButton = document.getElementById("start-button");
 const knownTypeButton = document.getElementById("known-type-button");
 const unknownTypeButton = document.getElementById("unknown-type-button");
 const unknownTypeLink = document.getElementById("unknown-type-link");
-const backToChoiceButton = document.getElementById("back-to-choice");
 const mbtiButtons = [...document.querySelectorAll(".mbti-card")];
 const selectionFeedback = document.getElementById("selection-feedback");
 
@@ -31,7 +30,7 @@ function handleMbtiSelection(type) {
     button.classList.toggle("is-selected", button.dataset.type === type);
   });
 
-  selectionFeedback.textContent = `已选择类型：${type}。这里已经预留好后续接入 AI 对话的扩展入口。`;
+  selectionFeedback.textContent = `已选择类型：${type}`;
   console.log("Selected MBTI:", type);
 }
 
@@ -44,9 +43,7 @@ knownTypeButton.addEventListener("click", () => {
 });
 
 unknownTypeButton.addEventListener("click", openTestSite);
-unknownTypeLink.addEventListener("click", openTestSite);
-
-backToChoiceButton.addEventListener("click", () => {
+unknownTypeLink.addEventListener("click", () => {
   showView("choice");
 });
 

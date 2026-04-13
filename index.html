@@ -14,15 +14,18 @@
   </head>
   <body>
     <main class="page-shell">
-      <div class="brand fade-in">
-        <span class="brand-mark">E</span>
-        <span>EchoMind</span>
-      </div>
+      <header class="top-shell fade-in">
+        <div class="brand">
+          <span class="brand-mark">E</span>
+          <span>EchoMind</span>
+        </div>
+        <p class="eyebrow">AI Emotion Growth Coach</p>
+      </header>
 
       <section id="home-view" class="view-card view-card-home fade-in is-active">
-        <div class="view-intro">
-          <p class="eyebrow">AI Emotion Growth Coach</p>
+        <div class="hero-copy">
           <p class="intro-text">或者，聊聊最近发生的事</p>
+          <p class="sub-intro-text">我们可以从你当下卡住的地方开始</p>
         </div>
 
         <div class="hero-panel">
@@ -31,51 +34,38 @@
         </div>
       </section>
 
-      <section id="choice-view" class="view-card fade-in" aria-hidden="true">
-        <div class="view-intro compact">
-          <p class="eyebrow">下一步</p>
-          <p class="intro-text">选择一种更适合你的开始方式</p>
-        </div>
-
-        <div class="stack-actions">
+      <section id="choice-view" class="view-card view-card-choice fade-in" aria-hidden="true">
+        <div class="stack-actions compact-actions">
           <button id="known-type-button" class="primary-button" type="button">我知道我的类型</button>
           <button id="unknown-type-button" class="option-button" type="button">我还不知道我的类型（开始测试）</button>
-          <p class="helper-text">测试将在新页面打开，完成后可以返回这里继续使用</p>
         </div>
       </section>
 
-      <section id="mbti-view" class="view-card fade-in" aria-hidden="true">
-        <div class="mbti-header">
+      <section id="mbti-view" class="view-card view-card-mbti fade-in" aria-hidden="true">
+        <div class="mbti-header single-action">
           <button id="unknown-type-link" class="back-link" type="button">我还不知道我的类型</button>
-          <button id="back-to-choice" class="subtle-link" type="button">返回选择</button>
-        </div>
-
-        <div class="view-intro compact narrow">
-          <p class="eyebrow">MBTI Type</p>
-          <h2>选择你已经知道的类型</h2>
-          <p class="intro-text">先完成类型选择，后续这里会接入更个性化的 AI 对话入口</p>
         </div>
 
         <div id="mbti-grid" class="mbti-grid">
-          <button class="mbti-card row-green" type="button" data-type="INFP">INFP</button>
           <button class="mbti-card row-green" type="button" data-type="ENFP">ENFP</button>
-          <button class="mbti-card row-green" type="button" data-type="INFJ">INFJ</button>
+          <button class="mbti-card row-green" type="button" data-type="INFP">INFP</button>
           <button class="mbti-card row-green" type="button" data-type="ENFJ">ENFJ</button>
+          <button class="mbti-card row-green" type="button" data-type="INFJ">INFJ</button>
 
-          <button class="mbti-card row-purple" type="button" data-type="INTP">INTP</button>
           <button class="mbti-card row-purple" type="button" data-type="ENTP">ENTP</button>
-          <button class="mbti-card row-purple" type="button" data-type="INTJ">INTJ</button>
+          <button class="mbti-card row-purple" type="button" data-type="INTP">INTP</button>
           <button class="mbti-card row-purple" type="button" data-type="ENTJ">ENTJ</button>
+          <button class="mbti-card row-purple" type="button" data-type="INTJ">INTJ</button>
 
-          <button class="mbti-card row-yellow" type="button" data-type="ISFP">ISFP</button>
           <button class="mbti-card row-yellow" type="button" data-type="ESFP">ESFP</button>
-          <button class="mbti-card row-yellow" type="button" data-type="ISFJ">ISFJ</button>
-          <button class="mbti-card row-yellow" type="button" data-type="ESFJ">ESFJ</button>
+          <button class="mbti-card row-yellow" type="button" data-type="ISFP">ISFP</button>
+          <button class="mbti-card row-yellow" type="button" data-type="ESTP">ESTP</button>
+          <button class="mbti-card row-yellow" type="button" data-type="ISTP">ISTP</button>
 
-          <button class="mbti-card row-blue" type="button" data-type="ISTP">ISTP</button>
-          <button class="mbti-card row-blue" type="button" data-type="ESTP">ESTP</button>
-          <button class="mbti-card row-blue" type="button" data-type="ISTJ">ISTJ</button>
           <button class="mbti-card row-blue" type="button" data-type="ESTJ">ESTJ</button>
+          <button class="mbti-card row-blue" type="button" data-type="ISTJ">ISTJ</button>
+          <button class="mbti-card row-blue" type="button" data-type="ESFJ">ESFJ</button>
+          <button class="mbti-card row-blue" type="button" data-type="ISFJ">ISFJ</button>
         </div>
 
         <div id="selection-feedback" class="selection-feedback" aria-live="polite">
