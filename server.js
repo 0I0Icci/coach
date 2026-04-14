@@ -182,6 +182,11 @@ const server = http.createServer(async (request, response) => {
     return;
   }
 
+  if (request.method === "GET" && requestUrl.pathname === "/health") {
+    json(response, 200, { ok: true, model: OPENAI_MODEL });
+    return;
+  }
+
   if (request.method === "POST" && requestUrl.pathname === "/api/chat") {
     let body = "";
     request.on("data", (chunk) => {

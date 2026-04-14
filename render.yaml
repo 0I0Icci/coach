@@ -1,0 +1,15 @@
+﻿services:
+  - type: web
+    name: echomind-api-0i0icci
+    runtime: node
+    autoDeploy: true
+    buildCommand: ""
+    startCommand: node server.js
+    healthCheckPath: /health
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_MODEL
+        value: gpt-5-mini
+      - key: PORT
+        value: 10000
