@@ -1,4 +1,4 @@
-﻿const API_BASE_URL = window.ECHOMIND_API_BASE_URL || "";
+﻿const API_BASE_URL = (window.ECHOMIND_API_BASE_URL || "https://echomind-bvix.onrender.com").replace(/\/$/, "");
 const TEST_URL = "https://totypes.com";
 
 const communicationQuestions = [
@@ -317,3 +317,4 @@ chatForm.addEventListener("submit", async (event) => {
 });
 
 showView("home");
+
