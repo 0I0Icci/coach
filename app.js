@@ -1,5 +1,7 @@
 const API_BASE_URL = (window.ECHOMIND_API_BASE_URL || "https://echomind-bvix.onrender.com").replace(/\/$/, "");
 const TEST_URL = "https://totypes.com";
+const STORAGE_KEY = "echomind:user-state:v1";
+const MAX_STORED_MESSAGES = 80;
 
 const communicationQuestions = [
   { id: 1, title: "你被领导批评后，心情很差，你更可能：", options: [
@@ -136,12 +138,67 @@ function openTestSite() {
   window.open(TEST_URL, "_blank", "noopener,noreferrer");
 }
 
+function hasSavedProfile() {
+  return Boolean(appState.mbtiType && appState.resultKey && resultDescriptions[appState.resultKey]);
+}
+
+function normalizeStoredHistory(history) {
+  if (!Array.isArray(history)) return [];
+
+  return history
+    .filter((message) => message && ["user", "assistant"].includes(message.role) && typeof message.content === "string")
+    .map((message) => ({ role: message.role, content: message.content.trim() }))
+    .filter((message) => message.content)
+    .slice(-MAX_STORED_MESSAGES);
+}
+
+function loadStoredState() {
+  try {
+    const rawState = localStorage.getItem(STORAGE_KEY);
+    if (!rawState) return;
+
+    const storedState = JSON.parse(rawState);
+    appState.mbtiType = typeof storedState.mbtiType === "string" ? storedState.mbtiType : "";
+    appState.resultKey = resultDescriptions[storedState.resultKey] ? storedState.resultKey : "";
+    appState.conversationHistory = normalizeStoredHistory(storedState.conversationHistory);
+    appState.answers = communicationQuestions.map((question, index) => {
+      const storedAnswer = storedState.answers?.[index];
+      return question.options.find((option) => option.key === storedAnswer?.key) || null;
+    });
+  } catch (error) {
+    console.warn("Unable to load saved EchoMind state.", error);
+  }
+}
+
+function saveStoredState() {
+  try {
+    const storedState = {
+      mbtiType: appState.mbtiType,
+      resultKey: appState.resultKey,
+      answers: appState.answers.map((answer) => answer ? { key: answer.key, style: answer.style } : null),
+      conversationHistory: appState.conversationHistory.slice(-MAX_STORED_MESSAGES),
+      updatedAt: new Date().toISOString(),
+    };
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(storedState));
+  } catch (error) {
+    console.warn("Unable to save EchoMind state.", error);
+  }
+}
+
 function appendMessage(role, text) {
   const bubble = document.createElement("div");
   bubble.className = `chat-bubble ${role}`;
   bubble.textContent = text;
   chatMessages.appendChild(bubble);
   chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function renderStoredMessages() {
+  chatMessages.innerHTML = "";
+  appState.conversationHistory.forEach((message) => {
+    appendMessage(message.role, message.content);
+  });
 }
 
 function setChatPending(isPending, label = "发送") {
@@ -176,6 +233,7 @@ async function requestAssistantReply({ message = "", opening = false }) {
     appState.previousResponseId = data.responseId || appState.previousResponseId;
     appendMessage("assistant", data.reply);
     appState.conversationHistory.push({ role: "assistant", content: data.reply });
+    saveStoredState();
   } catch (error) {
     appendMessage("assistant", `当前无法连接 AI 服务：${error.message}`);
   } finally {
@@ -183,12 +241,19 @@ async function requestAssistantReply({ message = "", opening = false }) {
   }
 }
 
-function seedChat() {
-  chatMessages.innerHTML = "";
-  appState.conversationHistory = [];
+function seedChat({ preserveHistory = false } = {}) {
+  if (!preserveHistory) {
+    chatMessages.innerHTML = "";
+    appState.conversationHistory = [];
+  }
+
   const result = resultDescriptions[appState.resultKey];
   chatMbtiBadge.textContent = `MBTI：${appState.mbtiType}`;
   chatStyleBadge.textContent = `风格：${result.label}`;
+
+  if (preserveHistory) {
+    renderStoredMessages();
+  }
 }
 
 function handleMbtiSelection(type) {
@@ -199,6 +264,9 @@ function handleMbtiSelection(type) {
   selectionFeedback.textContent = `已选择类型：${type}`;
   appState.currentQuestionIndex = 0;
   appState.answers = new Array(communicationQuestions.length).fill(null);
+  appState.resultKey = "";
+  appState.conversationHistory = [];
+  saveStoredState();
   renderQuestion();
   showView("test");
 }
@@ -245,6 +313,7 @@ function renderQuestion() {
     button.addEventListener("click", () => {
       const selectedOption = currentQuestion.options.find((option) => option.key === button.dataset.key);
       appState.answers[appState.currentQuestionIndex] = selectedOption;
+      saveStoredState();
       goToNextQuestionOrResult();
     });
   });
@@ -266,6 +335,7 @@ function calculateResult() {
 
   const sortedEntries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
   appState.resultKey = sortedEntries[0][0];
+  saveStoredState();
   return resultDescriptions[appState.resultKey];
 }
 
@@ -277,6 +347,12 @@ function showResult() {
 }
 
 startButton.addEventListener("click", () => {
+  if (hasSavedProfile()) {
+    seedChat({ preserveHistory: true });
+    showView("chat");
+    return;
+  }
+
   showView("choice");
 });
 
@@ -305,6 +381,7 @@ startChatButton.addEventListener("click", async () => {
   calculateResult();
   appState.previousResponseId = "";
   seedChat();
+  saveStoredState();
   showView("chat");
   await requestAssistantReply({ opening: true });
 });
@@ -316,8 +393,10 @@ chatForm.addEventListener("submit", async (event) => {
 
   appendMessage("user", text);
   appState.conversationHistory.push({ role: "user", content: text });
+  saveStoredState();
   chatInput.value = "";
   await requestAssistantReply({ message: text });
 });
 
+loadStoredState();
 showView("home");
