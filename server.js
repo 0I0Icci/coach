@@ -45,10 +45,10 @@ const DEEPSEEK_MODEL = process.env.DEEPSEEK_MODEL || "deepseek-v4-flash";
 const MAX_HISTORY_MESSAGES = 24;
 
 const stylePromptMap = {
-  "Emotion-first": "���ȹ���ͽ��ɸ��ܣ��ٰ����û�����������������Ƚ�������",
-  "Logic-first": "���Ȱ����û����巢����ʲô���߼���ϵ�͹ؼ�ì�ܡ������������������䵭��",
-  "Action-first": "���Ȱ����û��������Բ�ȡ����һ�����ش�Ҫ���塢��ࡢ���ж��С�",
-  Companion: "�����ṩ���к͵�ѹ���������������û����̷������ж���",
+  "Emotion-first": "优先共情和接纳感受，再帮助用户慢慢梳理。避免过度讲道理。",
+  "Logic-first": "优先帮助用户厘清发生了什么、逻辑关系和关键矛盾。语气清晰但不过度冷淡。",
+  "Action-first": "优先帮助用户看见可以采取的下一步。回答要具体、简洁、有行动感。",
+  Companion: "优先提供陪伴感和低压力交流，不逼迫用户立刻分析或行动。",
 };
 
 function json(response, statusCode, payload) {
@@ -65,14 +65,14 @@ function buildInstructions({ mbtiType, communicationStyle }) {
   const toneRule = stylePromptMap[communicationStyle] || stylePromptMap.Companion;
 
   return [
-    "���� EchoMind �� AI �����ɳ������������Ļظ���",
-    "Ŀ���ǰ����û������Լ����������ָ�һ���ȶ��У����ҵ��ºͿ�ִ�е���һ����",
-    "��Ҫ��ҽѧ��ϣ���Ҫ�����Լ�������ʦ��",
-    "����û������������ˡ���ɱ�����˷��գ������û�������ϵ���ؽ���֧�֡������ε��˻�רҵ������",
-    `�û���ǰ MBTI �ο���${mbtiType || "δ�ṩ"}����ֻ�Ƿ��ο�����Ҫ���û��̰廯��`,
-    `�û���ͨƫ�ã�${communicationStyle || "Companion"}��${toneRule}`,
-    "Ĭ�ϻش�ṹ���Ȼ�Ӧ���¸��ܣ��ٸ�һ�����壬����һ��������һ����",
-    "�����û���ȷҪ�󣬲�Ҫһ�θ�̫�ಽ�衣",
+    "你是 EchoMind 的 AI 情绪成长教练，用中文回复。",
+    "目标是帮助用户理解自己的情绪、恢复一点稳定感，并找到温和可执行的下一步。",
+    "不要做医学诊断，不要宣称自己是治疗师。",
+    "如果用户出现明显自伤、自杀或他伤风险，鼓励用户立即联系当地紧急支持、可信任的人或专业帮助。",
+    `用户当前 MBTI 参考：${mbtiType || "未提供"}。这只是风格参考，不要把用户刻板化。`,
+    `用户沟通偏好：${communicationStyle || "Companion"}。${toneRule}`,
+    "默认回答结构：先回应当下感受，再给一点点澄清，最后给一个轻量下一步。",
+    "除非用户明确要求，不要一次给太多步骤。",
   ].join("\n");
 }
 
@@ -102,7 +102,7 @@ function buildMessages({ message, history, opening, mbtiType, communicationStyle
   if (opening) {
     messages.push({
       role: "user",
-      content: "���������û��� MBTI �͹�ͨ�����һ����Ȼ���º͡��ʺϼ���չ������Ŀ����׻�ӭ������Ҫ̫������Ҫ�е㡣",
+      content: "请根据这个用户的 MBTI 和沟通风格，用一句自然、温和、适合继续展开聊天的开场白欢迎他。不要太长，不要列点。",
     });
     return messages;
   }
