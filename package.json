@@ -1,8 +1,8 @@
-﻿{
+{
   "name": "echomind-coach",
   "version": "1.0.0",
   "private": true,
-  "description": "EchoMind AI emotion coach with OpenAI-backed chat",
+  "description": "EchoMind AI emotion coach with DeepSeek-backed chat",
   "engines": {
     "node": ">=22"
   },

@@ -1,86 +1,86 @@
-ï»¿const API_BASE_URL = (window.ECHOMIND_API_BASE_URL || "https://echomind-bvix.onrender.com").replace(/\/$/, "");
+const API_BASE_URL = (window.ECHOMIND_API_BASE_URL || "https://echomind-bvix.onrender.com").replace(/\/$/, "");
 const TEST_URL = "https://totypes.com";
 
 const communicationQuestions = [
-  { id: 1, title: "ä½ è¢«é¢†å¯¼æ‰¹è¯„åŽï¼Œå¿ƒæƒ…å¾ˆå·®ï¼Œä½ æ›´å¯èƒ½ï¼š", options: [
-    { key: "A", text: "æ‰¾äººèŠä¸€èŠï¼Œåæ§½ä¸€ä¸‹", style: "Emotion-first" },
-    { key: "B", text: "è‡ªå·±æ¶ˆåŒ–ï¼Œä¸å¤ªæƒ³è¯´", style: "Logic-first" },
-    { key: "C", text: "ä¸€è¾¹æƒ³ä¸€è¾¹åå¤ç¢ç£¨", style: "Action-first" },
-    { key: "D", text: "å°½é‡ä¸åŽ»æƒ³ï¼Œè½¬ç§»æ³¨æ„åŠ›", style: "Companion" },
+  { id: 1, title: "Äã±»Áìµ¼ÅúÆÀºó£¬ÐÄÇéºÜ²î£¬Äã¸ü¿ÉÄÜ£º", options: [
+    { key: "A", text: "ÕÒÈËÁÄÒ»ÁÄ£¬ÍÂ²ÛÒ»ÏÂ", style: "Emotion-first" },
+    { key: "B", text: "×Ô¼ºÏû»¯£¬²»Ì«ÏëËµ", style: "Logic-first" },
+    { key: "C", text: "Ò»±ßÏëÒ»±ß·´¸´×ÁÄ¥", style: "Action-first" },
+    { key: "D", text: "¾¡Á¿²»È¥Ïë£¬×ªÒÆ×¢ÒâÁ¦", style: "Companion" },
   ]},
-  { id: 2, title: "å½“ä½ æƒ…ç»ªä½Žè½æ—¶ï¼Œä½ æ›´å¸Œæœ›åˆ«äººï¼š", options: [
-    { key: "A", text: "å®‰æ…°ä½ ã€ç†è§£ä½ ", style: "Emotion-first" },
-    { key: "B", text: "å¸®ä½ åˆ†æžé—®é¢˜", style: "Logic-first" },
-    { key: "C", text: "ç»™ä½ å…·ä½“å»ºè®®", style: "Action-first" },
-    { key: "D", text: "é™ªä½ èŠç‚¹åˆ«çš„", style: "Companion" },
+  { id: 2, title: "µ±ÄãÇéÐ÷µÍÂäÊ±£¬Äã¸üÏ£Íû±ðÈË£º", options: [
+    { key: "A", text: "°²Î¿Äã¡¢Àí½âÄã", style: "Emotion-first" },
+    { key: "B", text: "°ïÄã·ÖÎöÎÊÌâ", style: "Logic-first" },
+    { key: "C", text: "¸øÄã¾ßÌå½¨Òé", style: "Action-first" },
+    { key: "D", text: "ÅãÄãÁÄµã±ðµÄ", style: "Companion" },
   ]},
-  { id: 3, title: "å½“åˆ«äººè¯¯è§£ä½ æ—¶ï¼Œä½ é€šå¸¸ä¼šï¼š", options: [
-    { key: "A", text: "ç«‹åˆ»è§£é‡Šæ¸…æ¥š", style: "Emotion-first" },
-    { key: "B", text: "æœ‰ç‚¹éš¾å—ä½†ä¸å¤ªè¯´", style: "Logic-first" },
-    { key: "C", text: "åå¤æƒ³è¿™ä»¶äº‹", style: "Action-first" },
-    { key: "D", text: "è§‰å¾—ç®—äº†", style: "Companion" },
+  { id: 3, title: "µ±±ðÈËÎó½âÄãÊ±£¬ÄãÍ¨³£»á£º", options: [
+    { key: "A", text: "Á¢¿Ì½âÊÍÇå³þ", style: "Emotion-first" },
+    { key: "B", text: "ÓÐµãÄÑÊÜµ«²»Ì«Ëµ", style: "Logic-first" },
+    { key: "C", text: "·´¸´ÏëÕâ¼þÊÂ", style: "Action-first" },
+    { key: "D", text: "¾õµÃËãÁË", style: "Companion" },
   ]},
-  { id: 4, title: "å¦‚æžœä½ å’ŒAIèŠå¤©ï¼Œä½ æ›´å¸Œæœ›å®ƒï¼š", options: [
-    { key: "A", text: "å¾ˆç†è§£ä½ ã€ä¼šå…±æƒ…", style: "Emotion-first" },
-    { key: "B", text: "å¸®ä½ åˆ†æžé—®é¢˜", style: "Logic-first" },
-    { key: "C", text: "ç»™ä½ è¡ŒåŠ¨å»ºè®®", style: "Action-first" },
-    { key: "D", text: "è½»æ¾èŠå¤©å°±å¥½", style: "Companion" },
+  { id: 4, title: "Èç¹ûÄãºÍAIÁÄÌì£¬Äã¸üÏ£ÍûËü£º", options: [
+    { key: "A", text: "ºÜÀí½âÄã¡¢»á¹²Çé", style: "Emotion-first" },
+    { key: "B", text: "°ïÄã·ÖÎöÎÊÌâ", style: "Logic-first" },
+    { key: "C", text: "¸øÄãÐÐ¶¯½¨Òé", style: "Action-first" },
+    { key: "D", text: "ÇáËÉÁÄÌì¾ÍºÃ", style: "Companion" },
   ]},
-  { id: 5, title: "å½“ä½ å€¾è¯‰é—®é¢˜æ—¶ï¼Œä½ æ›´åæ„Ÿï¼š", options: [
-    { key: "A", text: "è¢«å¿½è§†æƒ…ç»ª", style: "Emotion-first" },
-    { key: "B", text: "è¢«è®²å¤§é“ç†", style: "Logic-first" },
-    { key: "C", text: "æ²¡æœ‰å®žé™…å»ºè®®", style: "Action-first" },
-    { key: "D", text: "å¯¹è¯å¤ªæ²‰é‡", style: "Companion" },
+  { id: 5, title: "µ±ÄãÇãËßÎÊÌâÊ±£¬Äã¸ü·´¸Ð£º", options: [
+    { key: "A", text: "±»ºöÊÓÇéÐ÷", style: "Emotion-first" },
+    { key: "B", text: "±»½²´óµÀÀí", style: "Logic-first" },
+    { key: "C", text: "Ã»ÓÐÊµ¼Ê½¨Òé", style: "Action-first" },
+    { key: "D", text: "¶Ô»°Ì«³ÁÖØ", style: "Companion" },
   ]},
-  { id: 6, title: "ä½ æ›´å–œæ¬¢åˆ«äººï¼š", options: [
-    { key: "A", text: "æ…¢æ…¢å¬ä½ è¯´", style: "Emotion-first" },
-    { key: "B", text: "å¿«é€ŸæŠ“é‡ç‚¹", style: "Logic-first" },
-    { key: "C", text: "å¸®ä½ ç†æ¸…é€»è¾‘", style: "Action-first" },
-    { key: "D", text: "è®©ä½ è½»æ¾ä¸€ç‚¹", style: "Companion" },
+  { id: 6, title: "Äã¸üÏ²»¶±ðÈË£º", options: [
+    { key: "A", text: "ÂýÂýÌýÄãËµ", style: "Emotion-first" },
+    { key: "B", text: "¿ìËÙ×¥ÖØµã", style: "Logic-first" },
+    { key: "C", text: "°ïÄãÀíÇåÂß¼­", style: "Action-first" },
+    { key: "D", text: "ÈÃÄãÇáËÉÒ»µã", style: "Companion" },
   ]},
-  { id: 7, title: "é¢å¯¹ä¸€ä»¶å›°éš¾çš„ä»»åŠ¡ï¼Œä½ æ›´å¯èƒ½ï¼š", options: [
-    { key: "A", text: "æƒ³å¾ˆå¤šæ‰å¼€å§‹", style: "Emotion-first" },
-    { key: "B", text: "å…ˆåšå†è¯´", style: "Logic-first" },
-    { key: "C", text: "ä¸€ç›´æ‹–ç€", style: "Action-first" },
-    { key: "D", text: "çœ‹å¿ƒæƒ…", style: "Companion" },
+  { id: 7, title: "Ãæ¶ÔÒ»¼þÀ§ÄÑµÄÈÎÎñ£¬Äã¸ü¿ÉÄÜ£º", options: [
+    { key: "A", text: "ÏëºÜ¶à²Å¿ªÊ¼", style: "Emotion-first" },
+    { key: "B", text: "ÏÈ×öÔÙËµ", style: "Logic-first" },
+    { key: "C", text: "Ò»Ö±ÍÏ×Å", style: "Action-first" },
+    { key: "D", text: "¿´ÐÄÇé", style: "Companion" },
   ]},
-  { id: 8, title: "å½“ä½ çŠ¹è±«ä¸€ä¸ªé€‰æ‹©æ—¶ï¼Œä½ æ›´å¸Œæœ›ï¼š", options: [
-    { key: "A", text: "è¢«ç†è§£ä½ çš„çº ç»“", style: "Emotion-first" },
-    { key: "B", text: "å¸®ä½ åˆ†æžåˆ©å¼Š", style: "Logic-first" },
-    { key: "C", text: "ç»™ä½ ä¸€ä¸ªå»ºè®®", style: "Action-first" },
-    { key: "D", text: "è®©ä½ è‡ªå·±æ…¢æ…¢æƒ³", style: "Companion" },
+  { id: 8, title: "µ±ÄãÓÌÔ¥Ò»¸öÑ¡ÔñÊ±£¬Äã¸üÏ£Íû£º", options: [
+    { key: "A", text: "±»Àí½âÄãµÄ¾À½á", style: "Emotion-first" },
+    { key: "B", text: "°ïÄã·ÖÎöÀû±×", style: "Logic-first" },
+    { key: "C", text: "¸øÄãÒ»¸ö½¨Òé", style: "Action-first" },
+    { key: "D", text: "ÈÃÄã×Ô¼ºÂýÂýÏë", style: "Companion" },
   ]},
-  { id: 9, title: "å½“ä½ çŠ¶æ€ä¸å¥½æ—¶ï¼Œä½ æ›´å¸Œæœ›AIï¼š", options: [
-    { key: "A", text: "é™ªä½ æ…¢æ…¢èŠ", style: "Emotion-first" },
-    { key: "B", text: "å¸®ä½ ç†æ¸…é—®é¢˜", style: "Logic-first" },
-    { key: "C", text: "æŽ¨ä½ è¡ŒåŠ¨", style: "Action-first" },
-    { key: "D", text: "ä¸æ‰“æ‰°ä½ ", style: "Companion" },
+  { id: 9, title: "µ±Äã×´Ì¬²»ºÃÊ±£¬Äã¸üÏ£ÍûAI£º", options: [
+    { key: "A", text: "ÅãÄãÂýÂýÁÄ", style: "Emotion-first" },
+    { key: "B", text: "°ïÄãÀíÇåÎÊÌâ", style: "Logic-first" },
+    { key: "C", text: "ÍÆÄãÐÐ¶¯", style: "Action-first" },
+    { key: "D", text: "²»´òÈÅÄã", style: "Companion" },
   ]},
-  { id: 10, title: "åœ¨äººé™…å…³ç³»ä¸­ï¼Œä½ æ›´å®¹æ˜“ï¼š", options: [
-    { key: "A", text: "è¿‡åº¦åœ¨æ„åˆ«äººæ„Ÿå—", style: "Emotion-first" },
-    { key: "B", text: "è®²é“ç†", style: "Logic-first" },
-    { key: "C", text: "å›žé¿å†²çª", style: "Action-first" },
-    { key: "D", text: "çœ‹æƒ…å†µ", style: "Companion" },
+  { id: 10, title: "ÔÚÈË¼Ê¹ØÏµÖÐ£¬Äã¸üÈÝÒ×£º", options: [
+    { key: "A", text: "¹ý¶ÈÔÚÒâ±ðÈË¸ÐÊÜ", style: "Emotion-first" },
+    { key: "B", text: "½²µÀÀí", style: "Logic-first" },
+    { key: "C", text: "»Ø±Ü³åÍ»", style: "Action-first" },
+    { key: "D", text: "¿´Çé¿ö", style: "Companion" },
   ]},
-  { id: 11, title: "å½“ä½ å’Œåˆ«äººå‘ç”Ÿå†²çªï¼Œä½ æ›´å€¾å‘ï¼š", options: [
-    { key: "A", text: "ä¿®å¤å…³ç³»", style: "Emotion-first" },
-    { key: "B", text: "è®²æ¸…å¯¹é”™", style: "Logic-first" },
-    { key: "C", text: "é¿å…å†²çª", style: "Action-first" },
-    { key: "D", text: "é¡ºå…¶è‡ªç„¶", style: "Companion" },
+  { id: 11, title: "µ±ÄãºÍ±ðÈË·¢Éú³åÍ»£¬Äã¸üÇãÏò£º", options: [
+    { key: "A", text: "ÐÞ¸´¹ØÏµ", style: "Emotion-first" },
+    { key: "B", text: "½²Çå¶Ô´í", style: "Logic-first" },
+    { key: "C", text: "±ÜÃâ³åÍ»", style: "Action-first" },
+    { key: "D", text: "Ë³Æä×ÔÈ»", style: "Companion" },
   ]},
-  { id: 12, title: "å¦‚æžœä½ çŽ°åœ¨å¾ˆéš¾å—ï¼Œä½ æ›´å¸Œæœ›AIç¬¬ä¸€å¥è¯æ˜¯ï¼š", options: [
-    { key: "A", text: "â€œå¬èµ·æ¥ä½ çœŸçš„å¾ˆéš¾å—â€", style: "Emotion-first" },
-    { key: "B", text: "â€œæˆ‘ä»¬ä¸€èµ·çœ‹çœ‹å‘ç”Ÿäº†ä»€ä¹ˆâ€", style: "Logic-first" },
-    { key: "C", text: "â€œä½ å¯ä»¥è¯•è¯•è¿™æ ·åšâ€", style: "Action-first" },
-    { key: "D", text: "â€œæƒ³èŠç‚¹åˆ«çš„å—ï¼Ÿâ€", style: "Companion" },
+  { id: 12, title: "Èç¹ûÄãÏÖÔÚºÜÄÑÊÜ£¬Äã¸üÏ£ÍûAIµÚÒ»¾ä»°ÊÇ£º", options: [
+    { key: "A", text: "¡°ÌýÆðÀ´ÄãÕæµÄºÜÄÑÊÜ¡±", style: "Emotion-first" },
+    { key: "B", text: "¡°ÎÒÃÇÒ»Æð¿´¿´·¢ÉúÁËÊ²Ã´¡±", style: "Logic-first" },
+    { key: "C", text: "¡°Äã¿ÉÒÔÊÔÊÔÕâÑù×ö¡±", style: "Action-first" },
+    { key: "D", text: "¡°ÏëÁÄµã±ðµÄÂð£¿¡±", style: "Companion" },
   ]},
 ];
 
 const resultDescriptions = {
-  "Emotion-first": { label: "å…±æƒ…åž‹", text: "ä½ æ›´éœ€è¦è¢«ç†è§£å’Œæƒ…ç»ªæ”¯æŒã€‚æˆ‘ä»¬ä¼šç”¨æ›´æ¸©å’Œã€å€¾å¬å¼çš„æ–¹å¼å’Œä½ äº¤æµã€‚" },
-  "Logic-first": { label: "åˆ†æžåž‹", text: "ä½ æ›´åœ¨æ„äº‹æƒ…è¢«çœ‹æ¸…å’Œæ¢³ç†ã€‚æˆ‘ä»¬ä¼šç”¨æ›´æ¸…æ™°ã€ç»“æž„åŒ–çš„æ–¹å¼å’Œä½ äº¤æµã€‚" },
-  "Action-first": { label: "è¡ŒåŠ¨åž‹", text: "ä½ æ›´å¸Œæœ›å¯¹è¯èƒ½æŽ¨åŠ¨æ”¹å˜ã€‚æˆ‘ä»¬ä¼šæ›´ç›´æŽ¥åœ°ç»™å‡ºæ­¥éª¤æ„Ÿå’Œè¡ŒåŠ¨å»ºè®®ã€‚" },
-  Companion: { label: "é™ªä¼´åž‹", text: "ä½ æ›´åå¥½ä½ŽåŽ‹åŠ›ã€é™ªä¼´æ„Ÿå¼ºçš„äº¤æµã€‚æˆ‘ä»¬ä¼šç”¨æ›´è½»æŸ”ã€ä¸é€¼è¿«çš„æ–¹å¼å’Œä½ äº¤æµã€‚" },
+  "Emotion-first": { label: "¹²ÇéÐÍ", text: "Äã¸üÐèÒª±»Àí½âºÍÇéÐ÷Ö§³Ö¡£ÎÒÃÇ»áÓÃ¸üÎÂºÍ¡¢ÇãÌýÊ½µÄ·½Ê½ºÍÄã½»Á÷¡£" },
+  "Logic-first": { label: "·ÖÎöÐÍ", text: "Äã¸üÔÚÒâÊÂÇé±»¿´ÇåºÍÊáÀí¡£ÎÒÃÇ»áÓÃ¸üÇåÎú¡¢½á¹¹»¯µÄ·½Ê½ºÍÄã½»Á÷¡£" },
+  "Action-first": { label: "ÐÐ¶¯ÐÍ", text: "Äã¸üÏ£Íû¶Ô»°ÄÜÍÆ¶¯¸Ä±ä¡£ÎÒÃÇ»á¸üÖ±½ÓµØ¸ø³ö²½Öè¸ÐºÍÐÐ¶¯½¨Òé¡£" },
+  Companion: { label: "Åã°éÐÍ", text: "Äã¸üÆ«ºÃµÍÑ¹Á¦¡¢Åã°é¸ÐÇ¿µÄ½»Á÷¡£ÎÒÃÇ»áÓÃ¸üÇáÈá¡¢²»±ÆÆÈµÄ·½Ê½ºÍÄã½»Á÷¡£" },
 };
 
 const views = {
@@ -121,6 +121,7 @@ const appState = {
   resultKey: "",
   previousResponseId: "",
   isWaitingForReply: false,
+  conversationHistory: [],
 };
 
 function showView(viewName) {
@@ -143,11 +144,11 @@ function appendMessage(role, text) {
   chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
-function setChatPending(isPending, label = "å‘é€") {
+function setChatPending(isPending, label = "·¢ËÍ") {
   appState.isWaitingForReply = isPending;
   chatSendButton.disabled = isPending;
   chatInput.disabled = isPending;
-  chatSendButton.textContent = isPending ? "æ€è€ƒä¸­..." : label;
+  chatSendButton.textContent = isPending ? "Ë¼¿¼ÖÐ..." : label;
 }
 
 async function requestAssistantReply({ message = "", opening = false }) {
@@ -163,19 +164,20 @@ async function requestAssistantReply({ message = "", opening = false }) {
         opening,
         mbtiType: appState.mbtiType,
         communicationStyle: appState.resultKey,
-        previousResponseId: appState.previousResponseId,
+        history: appState.conversationHistory,
       }),
     });
 
     const data = await response.json();
     if (!response.ok) {
-      throw new Error(data.error || "AI æœåŠ¡æš‚æ—¶ä¸å¯ç”¨ã€‚è¯·ç¨åŽå†è¯•ã€‚");
+      throw new Error(data.error || "AI ·þÎñÔÝÊ±²»¿ÉÓÃ¡£ÇëÉÔºóÔÙÊÔ¡£");
     }
 
     appState.previousResponseId = data.responseId || appState.previousResponseId;
     appendMessage("assistant", data.reply);
+    appState.conversationHistory.push({ role: "assistant", content: data.reply });
   } catch (error) {
-    appendMessage("assistant", `å½“å‰æ— æ³•è¿žæŽ¥ AI æœåŠ¡ï¼š${error.message}`);
+    appendMessage("assistant", `µ±Ç°ÎÞ·¨Á¬½Ó AI ·þÎñ£º${error.message}`);
   } finally {
     setChatPending(false);
   }
@@ -183,9 +185,10 @@ async function requestAssistantReply({ message = "", opening = false }) {
 
 function seedChat() {
   chatMessages.innerHTML = "";
+  appState.conversationHistory = [];
   const result = resultDescriptions[appState.resultKey];
-  chatMbtiBadge.textContent = `MBTIï¼š${appState.mbtiType}`;
-  chatStyleBadge.textContent = `é£Žæ ¼ï¼š${result.label}`;
+  chatMbtiBadge.textContent = `MBTI£º${appState.mbtiType}`;
+  chatStyleBadge.textContent = `·ç¸ñ£º${result.label}`;
 }
 
 function handleMbtiSelection(type) {
@@ -193,7 +196,7 @@ function handleMbtiSelection(type) {
   mbtiButtons.forEach((button) => {
     button.classList.toggle("is-selected", button.dataset.type === type);
   });
-  selectionFeedback.textContent = `å·²é€‰æ‹©ç±»åž‹ï¼š${type}`;
+  selectionFeedback.textContent = `ÒÑÑ¡ÔñÀàÐÍ£º${type}`;
   appState.currentQuestionIndex = 0;
   appState.answers = new Array(communicationQuestions.length).fill(null);
   renderQuestion();
@@ -203,7 +206,7 @@ function handleMbtiSelection(type) {
 function updateQuestionNav() {
   const hasPrevious = appState.currentQuestionIndex > 0;
   nextQuestionButton.disabled = !hasPrevious;
-  nextQuestionButton.textContent = "å›žåˆ°ä¸Šä¸€é¢˜";
+  nextQuestionButton.textContent = "»Øµ½ÉÏÒ»Ìâ";
 }
 
 function goToNextQuestionOrResult() {
@@ -223,8 +226,8 @@ function renderQuestion() {
   void questionCard.offsetWidth;
   questionCard.classList.add("is-switching");
 
-  questionProgress.textContent = `ç¬¬ ${appState.currentQuestionIndex + 1} é¢˜ / å…± ${communicationQuestions.length} é¢˜`;
-  selectedMbti.textContent = `MBTIï¼š${appState.mbtiType || "æœªé€‰æ‹©"}`;
+  questionProgress.textContent = `µÚ ${appState.currentQuestionIndex + 1} Ìâ / ¹² ${communicationQuestions.length} Ìâ`;
+  selectedMbti.textContent = `MBTI£º${appState.mbtiType || "Î´Ñ¡Ôñ"}`;
   questionTitle.textContent = currentQuestion.title;
 
   questionOptions.innerHTML = currentQuestion.options
@@ -268,7 +271,7 @@ function calculateResult() {
 
 function showResult() {
   const result = calculateResult();
-  resultTitle.textContent = `ä½ çš„æ²Ÿé€šåå¥½ï¼š${result.label}`;
+  resultTitle.textContent = `ÄãµÄ¹µÍ¨Æ«ºÃ£º${result.label}`;
   resultDescription.textContent = result.text;
   showView("result");
 }
@@ -312,9 +315,9 @@ chatForm.addEventListener("submit", async (event) => {
   if (!text || appState.isWaitingForReply) return;
 
   appendMessage("user", text);
+  appState.conversationHistory.push({ role: "user", content: text });
   chatInput.value = "";
   await requestAssistantReply({ message: text });
 });
 
 showView("home");
-

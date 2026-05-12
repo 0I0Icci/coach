@@ -1,4 +1,4 @@
-﻿services:
+services:
   - type: web
     name: echomind-api-0i0icci
     runtime: node
@@ -7,9 +7,9 @@
     startCommand: node server.js
     healthCheckPath: /health
     envVars:
-      - key: OPENAI_API_KEY
+      - key: DEEPSEEK_API_KEY
         sync: false
-      - key: OPENAI_MODEL
-        value: gpt-5-mini
+      - key: DEEPSEEK_MODEL
+        value: deepseek-v4-flash
       - key: PORT
         value: 10000

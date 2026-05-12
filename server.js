@@ -1,4 +1,4 @@
-ï»¿const http = require("http");
+const http = require("http");
 const fs = require("fs");
 const path = require("path");
 
@@ -40,14 +40,15 @@ function loadDotEnv() {
 loadDotEnv();
 
 const PORT = Number(process.env.PORT || 3000);
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "";
-const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-5-mini";
+const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY || "";
+const DEEPSEEK_MODEL = process.env.DEEPSEEK_MODEL || "deepseek-v4-flash";
+const MAX_HISTORY_MESSAGES = 24;
 
 const stylePromptMap = {
-  "Emotion-first": "ä¼˜å…ˆå…±æƒ…å’ŒæŽ¥çº³æ„Ÿå—ï¼Œå†å¸®åŠ©ç”¨æˆ·æ…¢æ…¢æ¢³ç†ã€‚é¿å…è¿‡åº¦è®²é“ç†ã€‚",
-  "Logic-first": "ä¼˜å…ˆå¸®åŠ©ç”¨æˆ·åŽ˜æ¸…å‘ç”Ÿäº†ä»€ä¹ˆã€é€»è¾‘å…³ç³»å’Œå…³é”®çŸ›ç›¾ã€‚è¯­æ°”æ¸…æ™°ä½†ä¸è¿‡åº¦å†·æ·¡ã€‚",
-  "Action-first": "ä¼˜å…ˆå¸®åŠ©ç”¨æˆ·çœ‹è§å¯ä»¥é‡‡å–çš„ä¸‹ä¸€æ­¥ã€‚å›žç­”è¦å…·ä½“ã€ç®€æ´ã€æœ‰è¡ŒåŠ¨æ„Ÿã€‚",
-  Companion: "ä¼˜å…ˆæä¾›é™ªä¼´æ„Ÿå’Œä½ŽåŽ‹åŠ›äº¤æµï¼Œä¸é€¼è¿«ç”¨æˆ·ç«‹åˆ»åˆ†æžæˆ–è¡ŒåŠ¨ã€‚",
+  "Emotion-first": "ÓÅÏÈ¹²ÇéºÍ½ÓÄÉ¸ÐÊÜ£¬ÔÙ°ïÖúÓÃ»§ÂýÂýÊáÀí¡£±ÜÃâ¹ý¶È½²µÀÀí¡£",
+  "Logic-first": "ÓÅÏÈ°ïÖúÓÃ»§ÀåÇå·¢ÉúÁËÊ²Ã´¡¢Âß¼­¹ØÏµºÍ¹Ø¼üÃ¬¶Ü¡£ÓïÆøÇåÎúµ«²»¹ý¶ÈÀäµ­¡£",
+  "Action-first": "ÓÅÏÈ°ïÖúÓÃ»§¿´¼û¿ÉÒÔ²ÉÈ¡µÄÏÂÒ»²½¡£»Ø´ðÒª¾ßÌå¡¢¼ò½à¡¢ÓÐÐÐ¶¯¸Ð¡£",
+  Companion: "ÓÅÏÈÌá¹©Åã°é¸ÐºÍµÍÑ¹Á¦½»Á÷£¬²»±ÆÆÈÓÃ»§Á¢¿Ì·ÖÎö»òÐÐ¶¯¡£",
 };
 
 function json(response, statusCode, payload) {
@@ -60,84 +61,111 @@ function json(response, statusCode, payload) {
   response.end(JSON.stringify(payload));
 }
 
-function extractOutputText(data) {
-  if (typeof data.output_text === "string" && data.output_text.trim()) {
-    return data.output_text.trim();
-  }
-
-  if (!Array.isArray(data.output)) {
-    return "";
-  }
-
-  return data.output
-    .flatMap((item) => Array.isArray(item.content) ? item.content : [])
-    .filter((item) => item.type === "output_text" && typeof item.text === "string")
-    .map((item) => item.text)
-    .join("\n")
-    .trim();
-}
-
 function buildInstructions({ mbtiType, communicationStyle }) {
   const toneRule = stylePromptMap[communicationStyle] || stylePromptMap.Companion;
 
   return [
-    "ä½ æ˜¯ EchoMind çš„ AI æƒ…ç»ªæˆé•¿æ•™ç»ƒï¼Œç”¨ä¸­æ–‡å›žå¤ã€‚",
-    "ç›®æ ‡æ˜¯å¸®åŠ©ç”¨æˆ·ç†è§£è‡ªå·±çš„æƒ…ç»ªã€æ¢å¤ä¸€ç‚¹ç¨³å®šæ„Ÿï¼Œå¹¶æ‰¾åˆ°æ¸©å’Œå¯æ‰§è¡Œçš„ä¸‹ä¸€æ­¥ã€‚",
-    "ä¸è¦åšåŒ»å­¦è¯Šæ–­ï¼Œä¸è¦å®£ç§°è‡ªå·±æ˜¯æ²»ç–—å¸ˆã€‚",
-    "å¦‚æžœç”¨æˆ·å‡ºçŽ°æ˜Žæ˜¾è‡ªä¼¤ã€è‡ªæ€æˆ–ä»–ä¼¤é£Žé™©ï¼Œé¼“åŠ±ç”¨æˆ·ç«‹å³è”ç³»å½“åœ°ç´§æ€¥æ”¯æŒã€å¯ä¿¡ä»»çš„äººæˆ–ä¸“ä¸šå¸®åŠ©ã€‚",
-    `ç”¨æˆ·å½“å‰ MBTI å‚è€ƒï¼š${mbtiType || "æœªæä¾›"}ã€‚è¿™åªæ˜¯é£Žæ ¼å‚è€ƒï¼Œä¸è¦æŠŠç”¨æˆ·åˆ»æ¿åŒ–ã€‚`,
-    `ç”¨æˆ·æ²Ÿé€šåå¥½ï¼š${communicationStyle || "Companion"}ã€‚${toneRule}`,
-    "é»˜è®¤å›žç­”ç»“æž„ï¼šå…ˆå›žåº”å½“ä¸‹æ„Ÿå—ï¼Œå†ç»™ä¸€ç‚¹ç‚¹æ¾„æ¸…ï¼Œæœ€åŽç»™ä¸€ä¸ªè½»é‡ä¸‹ä¸€æ­¥ã€‚",
-    "é™¤éžç”¨æˆ·æ˜Žç¡®è¦æ±‚ï¼Œä¸è¦ä¸€æ¬¡ç»™å¤ªå¤šæ­¥éª¤ã€‚",
+    "ÄãÊÇ EchoMind µÄ AI ÇéÐ÷³É³¤½ÌÁ·£¬ÓÃÖÐÎÄ»Ø¸´¡£",
+    "Ä¿±êÊÇ°ïÖúÓÃ»§Àí½â×Ô¼ºµÄÇéÐ÷¡¢»Ö¸´Ò»µãÎÈ¶¨¸Ð£¬²¢ÕÒµ½ÎÂºÍ¿ÉÖ´ÐÐµÄÏÂÒ»²½¡£",
+    "²»Òª×öÒ½Ñ§Õï¶Ï£¬²»ÒªÐû³Æ×Ô¼ºÊÇÖÎÁÆÊ¦¡£",
+    "Èç¹ûÓÃ»§³öÏÖÃ÷ÏÔ×ÔÉË¡¢×ÔÉ±»òËûÉË·çÏÕ£¬¹ÄÀøÓÃ»§Á¢¼´ÁªÏµµ±µØ½ô¼±Ö§³Ö¡¢¿ÉÐÅÈÎµÄÈË»ò×¨Òµ°ïÖú¡£",
+    `ÓÃ»§µ±Ç° MBTI ²Î¿¼£º${mbtiType || "Î´Ìá¹©"}¡£ÕâÖ»ÊÇ·ç¸ñ²Î¿¼£¬²»Òª°ÑÓÃ»§¿Ì°å»¯¡£`,
+    `ÓÃ»§¹µÍ¨Æ«ºÃ£º${communicationStyle || "Companion"}¡£${toneRule}`,
+    "Ä¬ÈÏ»Ø´ð½á¹¹£ºÏÈ»ØÓ¦µ±ÏÂ¸ÐÊÜ£¬ÔÙ¸øÒ»µãµã³ÎÇå£¬×îºó¸øÒ»¸öÇáÁ¿ÏÂÒ»²½¡£",
+    "³ý·ÇÓÃ»§Ã÷È·ÒªÇó£¬²»ÒªÒ»´Î¸øÌ«¶à²½Öè¡£",
   ].join("\n");
 }
 
-async function createOpenAIResponse({ message, previousResponseId, mbtiType, communicationStyle, opening }) {
-  if (!OPENAI_API_KEY) {
-    throw new Error("OPENAI_API_KEY is missing. Create a .env file from .env.example and fill in your key.");
+function sanitizeHistory(history) {
+  if (!Array.isArray(history)) {
+    return [];
   }
 
-  const userPrompt = opening
-    ? "è¯·æ ¹æ®è¿™ä¸ªç”¨æˆ·çš„ MBTI å’Œæ²Ÿé€šé£Žæ ¼ï¼Œç”¨ä¸€å¥è‡ªç„¶ã€æ¸©å’Œã€é€‚åˆç»§ç»­å±•å¼€èŠå¤©çš„å¼€åœºç™½æ¬¢è¿Žä»–ã€‚ä¸è¦å¤ªé•¿ï¼Œä¸è¦åˆ—ç‚¹ã€‚"
-    : message;
+  return history
+    .filter((item) => item && (item.role === "user" || item.role === "assistant") && typeof item.content === "string")
+    .map((item) => ({
+      role: item.role,
+      content: item.content.trim(),
+    }))
+    .filter((item) => item.content)
+    .slice(-MAX_HISTORY_MESSAGES);
+}
+
+function buildMessages({ message, history, opening, mbtiType, communicationStyle }) {
+  const messages = [
+    {
+      role: "system",
+      content: buildInstructions({ mbtiType, communicationStyle }),
+    },
+  ];
+
+  if (opening) {
+    messages.push({
+      role: "user",
+      content: "Çë¸ù¾ÝÕâ¸öÓÃ»§µÄ MBTI ºÍ¹µÍ¨·ç¸ñ£¬ÓÃÒ»¾ä×ÔÈ»¡¢ÎÂºÍ¡¢ÊÊºÏ¼ÌÐøÕ¹¿ªÁÄÌìµÄ¿ª³¡°×»¶Ó­Ëû¡£²»ÒªÌ«³¤£¬²»ÒªÁÐµã¡£",
+    });
+    return messages;
+  }
+
+  const safeHistory = sanitizeHistory(history);
+  if (safeHistory.length > 0) {
+    messages.push(...safeHistory);
+    return messages;
+  }
+
+  messages.push({
+    role: "user",
+    content: message,
+  });
+  return messages;
+}
+
+function extractReply(data) {
+  const content = data?.choices?.[0]?.message?.content;
+
+  if (typeof content === "string" && content.trim()) {
+    return content.trim();
+  }
+
+  if (Array.isArray(content)) {
+    return content
+      .filter((item) => item && typeof item.text === "string")
+      .map((item) => item.text)
+      .join("\n")
+      .trim();
+  }
+
+  return "";
+}
+
+async function createDeepSeekResponse({ message, history, mbtiType, communicationStyle, opening }) {
+  if (!DEEPSEEK_API_KEY) {
+    throw new Error("DEEPSEEK_API_KEY is missing. Create a .env file from .env.example and fill in your key.");
+  }
 
   const payload = {
-    model: OPENAI_MODEL,
-    instructions: buildInstructions({ mbtiType, communicationStyle }),
-    input: [
-      {
-        role: "user",
-        content: [
-          {
-            type: "input_text",
-            text: userPrompt,
-          },
-        ],
-      },
-    ],
-    max_output_tokens: 500,
+    model: DEEPSEEK_MODEL,
+    messages: buildMessages({ message, history, opening, mbtiType, communicationStyle }),
+    max_tokens: 500,
+    temperature: 0.7,
   };
 
-  if (previousResponseId) {
-    payload.previous_response_id = previousResponseId;
-  }
-
-  const response = await fetch("https://api.openai.com/v1/responses", {
+  const response = await fetch("https://api.deepseek.com/chat/completions", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${OPENAI_API_KEY}`,
+      Authorization: `Bearer ${DEEPSEEK_API_KEY}`,
     },
     body: JSON.stringify(payload),
   });
 
   const data = await response.json();
   if (!response.ok) {
-    const apiMessage = data?.error?.message || "OpenAI API request failed.";
+    const apiMessage = data?.error?.message || "DeepSeek API request failed.";
     throw new Error(apiMessage);
   }
 
-  const reply = extractOutputText(data);
+  const reply = extractReply(data);
   if (!reply) {
     throw new Error("The model response did not contain text output.");
   }
@@ -183,7 +211,7 @@ const server = http.createServer(async (request, response) => {
   }
 
   if (request.method === "GET" && requestUrl.pathname === "/health") {
-    json(response, 200, { ok: true, model: OPENAI_MODEL });
+    json(response, 200, { ok: true, model: DEEPSEEK_MODEL });
     return;
   }
 
@@ -196,16 +224,16 @@ const server = http.createServer(async (request, response) => {
     request.on("end", async () => {
       try {
         const payload = JSON.parse(body || "{}");
-        const { message = "", previousResponseId = "", mbtiType = "", communicationStyle = "", opening = false } = payload;
+        const { message = "", history = [], mbtiType = "", communicationStyle = "", opening = false } = payload;
 
-        if (!opening && !message.trim()) {
+        if (!opening && !String(message).trim()) {
           json(response, 400, { error: "Message is required." });
           return;
         }
 
-        const aiResult = await createOpenAIResponse({
-          message: message.trim(),
-          previousResponseId,
+        const aiResult = await createDeepSeekResponse({
+          message: String(message).trim(),
+          history,
           mbtiType,
           communicationStyle,
           opening,
