@@ -295,6 +295,28 @@ async function getUserMemories({
   }
 }
 
+async function getUserProfile({
+  user_id = null,
+  anonymous_user_id = null,
+} = {}) {
+  try {
+    requireOwner({ user_id, anonymous_user_id });
+
+    let query = getSupabaseAdmin()
+      .from("user_profiles")
+      .select("id, mbti, mbti_type, communication_style, communication_style_description, cognitive_stack, test_answers, created_at, updated_at")
+      .limit(1)
+      .maybeSingle();
+
+    query = applyOwnerFilter(query, { user_id, anonymous_user_id });
+
+    const { data, error } = await query;
+    return result(data, error);
+  } catch (error) {
+    return result(null, error);
+  }
+}
+
 module.exports = {
   upsertUserProfile,
   saveChatMessage,
@@ -302,4 +324,5 @@ module.exports = {
   getRelevantSummaries,
   saveUserMemory,
   getUserMemories,
+  getUserProfile,
 };

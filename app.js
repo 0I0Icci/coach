@@ -325,13 +325,12 @@ function createGrowthRecord(userText, assistantText) {
 async function requestAssistantReply({ message = "", opening = false }) {
   setChatPending(true);
   try {
-    const response = await fetch(`${API_BASE_URL}/api/chat`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message, opening, mbtiType: appState.mbtiType, communicationStyle: appState.resultKey, cognitiveStack: getCognitiveStack(), history: appState.conversationHistory }) });
+    const response = await fetch(`${API_BASE_URL}/api/chat`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message, opening, user_id: cloudState.user?.id || null, mbtiType: appState.mbtiType, communicationStyle: appState.resultKey, cognitiveStack: getCognitiveStack(), history: appState.conversationHistory }) });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || "AI 服务暂时不可用。请稍后再试。");
     appState.previousResponseId = data.responseId || appState.previousResponseId;
     appendMessage("assistant", data.reply);
     appState.conversationHistory.push({ role: "assistant", content: data.reply });
-    await saveCloudMessage("assistant", data.reply);
     if (!opening && message) {
       const record = createGrowthRecord(message, data.reply);
       appState.growthRecords.unshift(record);
@@ -410,7 +409,7 @@ unknownTypeLink.addEventListener("click", () => showView("choice"));
 mbtiButtons.forEach((button) => button.addEventListener("click", () => handleMbtiSelection(button.dataset.type)));
 nextQuestionButton.addEventListener("click", () => { if (appState.currentQuestionIndex === 0) return; appState.currentQuestionIndex -= 1; renderQuestion(); });
 startChatButton.addEventListener("click", async () => { calculateResult(); appState.previousResponseId = ""; seedChat(); saveStoredState(); await saveCloudProfile(); showView("chat"); await requestAssistantReply({ opening: true }); });
-chatForm.addEventListener("submit", async (event) => { event.preventDefault(); const text = chatInput.value.trim(); if (!text || appState.isWaitingForReply) return; appendMessage("user", text); appState.conversationHistory.push({ role: "user", content: text }); saveStoredState(); await saveCloudMessage("user", text); chatInput.value = ""; await requestAssistantReply({ message: text }); });
+chatForm.addEventListener("submit", async (event) => { event.preventDefault(); const text = chatInput.value.trim(); if (!text || appState.isWaitingForReply) return; appendMessage("user", text); appState.conversationHistory.push({ role: "user", content: text }); saveStoredState(); chatInput.value = ""; await requestAssistantReply({ message: text }); });
 
 authForm.addEventListener("submit", async (event) => { event.preventDefault(); if (!cloudState.client) return; const email = authEmail.value.trim(); if (!email) return; authSubmit.disabled = true; cloudStatus.textContent = "正在发送登录链接..."; const { error } = await cloudState.client.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.href.split("#")[0] } }); authSubmit.disabled = false; cloudStatus.textContent = error ? `发送失败：${error.message}` : "登录链接已发送，请打开邮箱完成登录"; });
 logoutButton.addEventListener("click", async () => { if (!cloudState.client) return; await cloudState.client.auth.signOut(); cloudState.user = null; updateAuthUi("已退出登录"); showView("login"); });
