@@ -22,19 +22,27 @@
         <p class="eyebrow">AI Emotion Growth Coach</p>
       </header>
 
-      <section class="auth-panel fade-in" aria-label="账号同步">
-        <div class="auth-copy">
-          <p id="auth-status" class="auth-status">本机保存中</p>
-          <p id="cloud-status" class="cloud-status">登录后可跨设备保存画像和聊天记录</p>
+      <section id="login-view" class="view-card view-card-login fade-in is-active">
+        <div class="login-panel">
+          <p class="eyebrow">Private Growth Space</p>
+          <h2>先登录，再开始认识自己</h2>
+          <p id="login-copy" class="helper-text centered-helper">登录后，你的人格画像、聊天记录和成长变化会保存在自己的账号里。</p>
+          <form id="auth-form" class="auth-form auth-form-large">
+            <input id="auth-email" type="email" placeholder="输入邮箱接收登录链接" autocomplete="email" />
+            <button id="auth-submit" class="primary-button" type="submit">发送登录链接</button>
+          </form>
+          <p id="auth-status" class="auth-status">正在连接云端记忆...</p>
+          <p id="cloud-status" class="cloud-status">请使用邮箱登录进入内测</p>
         </div>
-        <form id="auth-form" class="auth-form">
-          <input id="auth-email" type="email" placeholder="输入邮箱同步记录" autocomplete="email" />
-          <button id="auth-submit" class="secondary-button" type="submit">发送登录链接</button>
-        </form>
-        <button id="logout-button" class="secondary-button is-hidden" type="button">退出登录</button>
       </section>
 
-      <section id="home-view" class="view-card view-card-home fade-in is-active">
+      <section id="app-nav" class="app-nav is-hidden" aria-label="页面导航">
+        <button id="nav-chat" class="secondary-button" type="button">对话</button>
+        <button id="nav-profile" class="secondary-button" type="button">个人主页</button>
+        <button id="logout-button" class="secondary-button" type="button">退出登录</button>
+      </section>
+
+      <section id="home-view" class="view-card view-card-home fade-in" aria-hidden="true">
         <div class="hero-panel">
           <div class="hero-copy">
             <p class="guide-text">是什么让你现在有点卡住？</p>
@@ -64,26 +72,21 @@
           <button class="mbti-card row-green" type="button" data-type="INFP">INFP</button>
           <button class="mbti-card row-green" type="button" data-type="ENFJ">ENFJ</button>
           <button class="mbti-card row-green" type="button" data-type="INFJ">INFJ</button>
-
           <button class="mbti-card row-purple" type="button" data-type="ENTP">ENTP</button>
           <button class="mbti-card row-purple" type="button" data-type="INTP">INTP</button>
           <button class="mbti-card row-purple" type="button" data-type="ENTJ">ENTJ</button>
           <button class="mbti-card row-purple" type="button" data-type="INTJ">INTJ</button>
-
           <button class="mbti-card row-yellow" type="button" data-type="ESFP">ESFP</button>
           <button class="mbti-card row-yellow" type="button" data-type="ISFP">ISFP</button>
           <button class="mbti-card row-yellow" type="button" data-type="ESTP">ESTP</button>
           <button class="mbti-card row-yellow" type="button" data-type="ISTP">ISTP</button>
-
           <button class="mbti-card row-blue" type="button" data-type="ESTJ">ESTJ</button>
           <button class="mbti-card row-blue" type="button" data-type="ISTJ">ISTJ</button>
           <button class="mbti-card row-blue" type="button" data-type="ESFJ">ESFJ</button>
           <button class="mbti-card row-blue" type="button" data-type="ISFJ">ISFJ</button>
         </div>
 
-        <div id="selection-feedback" class="selection-feedback" aria-live="polite">
-          还没有选择类型
-        </div>
+        <div id="selection-feedback" class="selection-feedback" aria-live="polite">还没有选择类型</div>
       </section>
 
       <section id="style-test-view" class="view-card view-card-test fade-in" aria-hidden="true">
@@ -91,7 +94,6 @@
           <h2>我们想先更了解你一点</h2>
           <p class="helper-text centered-helper">没有对错，只是帮助我们用更适合你的方式和你交流</p>
         </div>
-
         <div id="question-card" class="question-card">
           <div class="question-meta">
             <span id="question-progress">第 1 题 / 共 12 题</span>
@@ -102,7 +104,6 @@
             <div id="question-options" class="question-options"></div>
           </div>
         </div>
-
         <div class="test-actions">
           <button id="next-question-button" class="primary-button" type="button" disabled>回到上一题</button>
         </div>
@@ -128,9 +129,7 @@
             <span id="chat-style-badge" class="chat-badge">风格：未识别</span>
           </div>
         </div>
-
         <div id="chat-messages" class="chat-messages" aria-live="polite"></div>
-
         <form id="chat-form" class="chat-form">
           <label class="chat-input-wrap" for="chat-input">
             <textarea id="chat-input" placeholder="你可以从最近让你卡住的一件事开始说起..." rows="4"></textarea>
@@ -139,6 +138,38 @@
             <button id="chat-send-button" class="primary-button" type="submit">发送</button>
           </div>
         </form>
+      </section>
+
+      <section id="profile-view" class="view-card view-card-profile fade-in" aria-hidden="true">
+        <div class="profile-header">
+          <div>
+            <p class="eyebrow">Personal Growth</p>
+            <h2>你的成长辅助主页</h2>
+          </div>
+          <button id="profile-chat-button" class="secondary-button" type="button">回到对话</button>
+        </div>
+
+        <div class="profile-grid">
+          <section class="profile-section">
+            <h3>当前画像</h3>
+            <div class="profile-summary">
+              <span id="profile-mbti">MBTI：未选择</span>
+              <span id="profile-style">沟通偏好：未识别</span>
+            </div>
+          </section>
+
+          <section class="profile-section">
+            <h3>八维认知功能</h3>
+            <p id="function-stack-summary" class="section-note">选择 MBTI 后会显示你的功能排序。</p>
+            <div id="function-stack" class="function-stack"></div>
+            <div id="function-detail" class="function-detail">点击任意功能，查看它在你体系中的位置和解释。</div>
+          </section>
+
+          <section class="profile-section profile-section-wide">
+            <h3>成长变化记录</h3>
+            <div id="growth-list" class="growth-list"></div>
+          </section>
+        </div>
       </section>
     </main>
 

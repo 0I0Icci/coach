@@ -63,8 +63,9 @@ function json(response, statusCode, payload) {
   response.end(JSON.stringify(payload));
 }
 
-function buildInstructions({ mbtiType, communicationStyle }) {
+function buildInstructions({ mbtiType, communicationStyle, cognitiveStack }) {
   const toneRule = stylePromptMap[communicationStyle] || stylePromptMap.Companion;
+  const stackText = Array.isArray(cognitiveStack) && cognitiveStack.length ? cognitiveStack.join(" > ") : "未提供";
 
   return [
     "你是 EchoMind 的 AI 情绪成长教练，用中文回复。",
@@ -72,6 +73,7 @@ function buildInstructions({ mbtiType, communicationStyle }) {
     "不要做医学诊断，不要宣称自己是治疗师。",
     "如果用户出现明显自伤、自杀或他伤风险，鼓励用户立即联系当地紧急支持、可信任的人或专业帮助。",
     `用户当前 MBTI 参考：${mbtiType || "未提供"}。这只是风格参考，不要把用户刻板化。`,
+    `用户八维认知功能排序：${stackText}。请根据主导/辅助/第三/劣势功能差异调整分析方式和行动建议。`,
     `用户沟通偏好：${communicationStyle || "Companion"}。${toneRule}`,
     "默认回答结构：先回应当下感受，再给一点点澄清，最后给一个轻量下一步。",
     "除非用户明确要求，不要一次给太多步骤。",
@@ -93,11 +95,11 @@ function sanitizeHistory(history) {
     .slice(-MAX_HISTORY_MESSAGES);
 }
 
-function buildMessages({ message, history, opening, mbtiType, communicationStyle }) {
+function buildMessages({ message, history, opening, mbtiType, communicationStyle, cognitiveStack }) {
   const messages = [
     {
       role: "system",
-      content: buildInstructions({ mbtiType, communicationStyle }),
+      content: buildInstructions({ mbtiType, communicationStyle, cognitiveStack }),
     },
   ];
 
@@ -140,14 +142,14 @@ function extractReply(data) {
   return "";
 }
 
-async function createDeepSeekResponse({ message, history, mbtiType, communicationStyle, opening }) {
+async function createDeepSeekResponse({ message, history, mbtiType, communicationStyle, cognitiveStack, opening }) {
   if (!DEEPSEEK_API_KEY) {
     throw new Error("DEEPSEEK_API_KEY is missing. Create a .env file from .env.example and fill in your key.");
   }
 
   const payload = {
     model: DEEPSEEK_MODEL,
-    messages: buildMessages({ message, history, opening, mbtiType, communicationStyle }),
+    messages: buildMessages({ message, history, opening, mbtiType, communicationStyle, cognitiveStack }),
     max_tokens: 500,
     temperature: 0.7,
   };
@@ -237,7 +239,7 @@ const server = http.createServer(async (request, response) => {
     request.on("end", async () => {
       try {
         const payload = JSON.parse(body || "{}");
-        const { message = "", history = [], mbtiType = "", communicationStyle = "", opening = false } = payload;
+        const { message = "", history = [], mbtiType = "", communicationStyle = "", cognitiveStack = [], opening = false } = payload;
 
         if (!opening && !String(message).trim()) {
           json(response, 400, { error: "Message is required." });
@@ -249,6 +251,7 @@ const server = http.createServer(async (request, response) => {
           history,
           mbtiType,
           communicationStyle,
+          cognitiveStack,
           opening,
         });
 
