@@ -84,7 +84,7 @@ function buildInstructions({ mbtiType, communicationStyle, cognitiveStack }) {
     `用户八维认知功能排序：${stackText}。请根据主导/辅助/第三/劣势功能差异调整分析方式和行动建议。`,
     `用户沟通偏好：${communicationStyle || "Companion"}。${toneRule}`,
     "默认回答结构：1-2句接住情绪，1-2句帮助澄清，最后给1个轻量下一步。",
-    "回复控制在180-260个中文字符内，除非用户明确要求详细分析。",
+    "回复控制在100-600个中文字符内，除非用户明确要求详细分析。",
     "完整比详细更重要；如果空间不够，宁可少说，也必须自然结束。",
     "不要使用未闭合的 markdown 粗体、编号或列表；不要在句子中途结束。",
   ].join("\n");
