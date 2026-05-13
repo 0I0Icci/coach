@@ -115,6 +115,12 @@ const chatMessages = document.getElementById("chat-messages");
 const chatForm = document.getElementById("chat-form");
 const chatInput = document.getElementById("chat-input");
 const chatSendButton = document.getElementById("chat-send-button");
+const authForm = document.getElementById("auth-form");
+const authEmail = document.getElementById("auth-email");
+const authSubmit = document.getElementById("auth-submit");
+const authStatus = document.getElementById("auth-status");
+const cloudStatus = document.getElementById("cloud-status");
+const logoutButton = document.getElementById("logout-button");
 
 const appState = {
   mbtiType: "",
@@ -124,6 +130,13 @@ const appState = {
   previousResponseId: "",
   isWaitingForReply: false,
   conversationHistory: [],
+};
+
+const cloudState = {
+  client: null,
+  user: null,
+  enabled: false,
+  ready: false,
 };
 
 function showView(viewName) {
@@ -152,6 +165,17 @@ function normalizeStoredHistory(history) {
     .slice(-MAX_STORED_MESSAGES);
 }
 
+function serializeAnswers() {
+  return appState.answers.map((answer) => answer ? { key: answer.key, style: answer.style } : null);
+}
+
+function hydrateAnswers(storedAnswers = []) {
+  appState.answers = communicationQuestions.map((question, index) => {
+    const storedAnswer = storedAnswers?.[index];
+    return question.options.find((option) => option.key === storedAnswer?.key) || null;
+  });
+}
+
 function loadStoredState() {
   try {
     const rawState = localStorage.getItem(STORAGE_KEY);
@@ -161,10 +185,7 @@ function loadStoredState() {
     appState.mbtiType = typeof storedState.mbtiType === "string" ? storedState.mbtiType : "";
     appState.resultKey = resultDescriptions[storedState.resultKey] ? storedState.resultKey : "";
     appState.conversationHistory = normalizeStoredHistory(storedState.conversationHistory);
-    appState.answers = communicationQuestions.map((question, index) => {
-      const storedAnswer = storedState.answers?.[index];
-      return question.options.find((option) => option.key === storedAnswer?.key) || null;
-    });
+    hydrateAnswers(storedState.answers);
   } catch (error) {
     console.warn("Unable to load saved EchoMind state.", error);
   }
@@ -175,7 +196,7 @@ function saveStoredState() {
     const storedState = {
       mbtiType: appState.mbtiType,
       resultKey: appState.resultKey,
-      answers: appState.answers.map((answer) => answer ? { key: answer.key, style: answer.style } : null),
+      answers: serializeAnswers(),
       conversationHistory: appState.conversationHistory.slice(-MAX_STORED_MESSAGES),
       updatedAt: new Date().toISOString(),
     };
@@ -183,6 +204,140 @@ function saveStoredState() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(storedState));
   } catch (error) {
     console.warn("Unable to save EchoMind state.", error);
+  }
+}
+
+function updateAuthUi(message = "") {
+  if (!cloudState.enabled) {
+    authStatus.textContent = "本机保存中";
+    cloudStatus.textContent = "配置 Supabase 后可跨设备同步画像和聊天记录";
+    authForm.classList.add("is-hidden");
+    logoutButton.classList.add("is-hidden");
+    return;
+  }
+
+  if (cloudState.user) {
+    authStatus.textContent = `已登录：${cloudState.user.email || "内测用户"}`;
+    cloudStatus.textContent = message || "画像和聊天记录会同步到云端";
+    authForm.classList.add("is-hidden");
+    logoutButton.classList.remove("is-hidden");
+    return;
+  }
+
+  authStatus.textContent = "本机保存中";
+  cloudStatus.textContent = message || "登录后可跨设备保存画像和聊天记录";
+  authForm.classList.remove("is-hidden");
+  logoutButton.classList.add("is-hidden");
+}
+
+async function initCloudMemory() {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/config`);
+    const config = await response.json();
+    const supabaseConfig = config?.supabase;
+
+    if (!supabaseConfig?.enabled || !window.supabase) {
+      updateAuthUi();
+      return;
+    }
+
+    cloudState.enabled = true;
+    cloudState.client = window.supabase.createClient(supabaseConfig.url, supabaseConfig.anonKey);
+    const { data } = await cloudState.client.auth.getSession();
+    cloudState.user = data.session?.user || null;
+    cloudState.ready = true;
+
+    cloudState.client.auth.onAuthStateChange(async (_event, session) => {
+      cloudState.user = session?.user || null;
+      updateAuthUi();
+      if (cloudState.user) {
+        await loadCloudState();
+      }
+    });
+
+    updateAuthUi();
+    if (cloudState.user) {
+      await loadCloudState();
+    }
+  } catch (error) {
+    cloudState.enabled = false;
+    updateAuthUi("云端同步暂时不可用，本机记录仍会保存");
+    console.warn("Unable to initialize cloud memory.", error);
+  }
+}
+
+async function loadCloudState() {
+  if (!cloudState.client || !cloudState.user) return;
+
+  const { data: profile, error: profileError } = await cloudState.client
+    .from("user_profiles")
+    .select("mbti_type, communication_style, test_answers")
+    .eq("user_id", cloudState.user.id)
+    .maybeSingle();
+
+  if (profileError) {
+    console.warn("Unable to load cloud profile.", profileError);
+    return;
+  }
+
+  const { data: messages, error: messagesError } = await cloudState.client
+    .from("chat_messages")
+    .select("role, content")
+    .eq("user_id", cloudState.user.id)
+    .order("created_at", { ascending: true })
+    .limit(MAX_STORED_MESSAGES);
+
+  if (messagesError) {
+    console.warn("Unable to load cloud messages.", messagesError);
+  }
+
+  if (profile) {
+    appState.mbtiType = profile.mbti_type || appState.mbtiType;
+    appState.resultKey = resultDescriptions[profile.communication_style] ? profile.communication_style : appState.resultKey;
+    hydrateAnswers(profile.test_answers || []);
+  } else if (hasSavedProfile()) {
+    await saveCloudProfile();
+  }
+
+  if (Array.isArray(messages) && messages.length > 0) {
+    appState.conversationHistory = normalizeStoredHistory(messages);
+  }
+
+  saveStoredState();
+  if (views.chat.classList.contains("is-active") && hasSavedProfile()) {
+    seedChat({ preserveHistory: true });
+  }
+}
+
+async function saveCloudProfile() {
+  if (!cloudState.client || !cloudState.user || !appState.mbtiType) return;
+
+  const { error } = await cloudState.client.from("user_profiles").upsert({
+    user_id: cloudState.user.id,
+    mbti_type: appState.mbtiType,
+    communication_style: appState.resultKey || null,
+    test_answers: serializeAnswers(),
+    updated_at: new Date().toISOString(),
+  }, { onConflict: "user_id" });
+
+  if (error) {
+    console.warn("Unable to save cloud profile.", error);
+  }
+}
+
+async function saveCloudMessage(role, content) {
+  if (!cloudState.client || !cloudState.user || !content) return;
+
+  const { error } = await cloudState.client.from("chat_messages").insert({
+    user_id: cloudState.user.id,
+    role,
+    content,
+    mbti_type: appState.mbtiType || null,
+    communication_style: appState.resultKey || null,
+  });
+
+  if (error) {
+    console.warn("Unable to save cloud message.", error);
   }
 }
 
@@ -234,6 +389,7 @@ async function requestAssistantReply({ message = "", opening = false }) {
     appendMessage("assistant", data.reply);
     appState.conversationHistory.push({ role: "assistant", content: data.reply });
     saveStoredState();
+    await saveCloudMessage("assistant", data.reply);
   } catch (error) {
     appendMessage("assistant", `当前无法连接 AI 服务：${error.message}`);
   } finally {
@@ -267,6 +423,7 @@ function handleMbtiSelection(type) {
   appState.resultKey = "";
   appState.conversationHistory = [];
   saveStoredState();
+  saveCloudProfile();
   renderQuestion();
   showView("test");
 }
@@ -314,6 +471,7 @@ function renderQuestion() {
       const selectedOption = currentQuestion.options.find((option) => option.key === button.dataset.key);
       appState.answers[appState.currentQuestionIndex] = selectedOption;
       saveStoredState();
+      saveCloudProfile();
       goToNextQuestionOrResult();
     });
   });
@@ -336,6 +494,7 @@ function calculateResult() {
   const sortedEntries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
   appState.resultKey = sortedEntries[0][0];
   saveStoredState();
+  saveCloudProfile();
   return resultDescriptions[appState.resultKey];
 }
 
@@ -382,6 +541,7 @@ startChatButton.addEventListener("click", async () => {
   appState.previousResponseId = "";
   seedChat();
   saveStoredState();
+  await saveCloudProfile();
   showView("chat");
   await requestAssistantReply({ opening: true });
 });
@@ -394,9 +554,38 @@ chatForm.addEventListener("submit", async (event) => {
   appendMessage("user", text);
   appState.conversationHistory.push({ role: "user", content: text });
   saveStoredState();
+  await saveCloudMessage("user", text);
   chatInput.value = "";
   await requestAssistantReply({ message: text });
 });
 
+authForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (!cloudState.client) return;
+
+  const email = authEmail.value.trim();
+  if (!email) return;
+
+  authSubmit.disabled = true;
+  cloudStatus.textContent = "正在发送登录链接...";
+  const { error } = await cloudState.client.auth.signInWithOtp({
+    email,
+    options: {
+      emailRedirectTo: window.location.href.split("#")[0],
+    },
+  });
+
+  authSubmit.disabled = false;
+  cloudStatus.textContent = error ? `发送失败：${error.message}` : "登录链接已发送，请打开邮箱完成登录";
+});
+
+logoutButton.addEventListener("click", async () => {
+  if (!cloudState.client) return;
+  await cloudState.client.auth.signOut();
+  cloudState.user = null;
+  updateAuthUi("已退出云端同步，本机记录仍会保留");
+});
+
 loadStoredState();
 showView("home");
+initCloudMemory();

@@ -42,6 +42,8 @@ loadDotEnv();
 const PORT = Number(process.env.PORT || 3000);
 const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY || "";
 const DEEPSEEK_MODEL = process.env.DEEPSEEK_MODEL || "deepseek-v4-flash";
+const SUPABASE_URL = process.env.SUPABASE_URL || "";
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || "";
 const MAX_HISTORY_MESSAGES = 24;
 
 const stylePromptMap = {
@@ -212,6 +214,17 @@ const server = http.createServer(async (request, response) => {
 
   if (request.method === "GET" && requestUrl.pathname === "/health") {
     json(response, 200, { ok: true, model: DEEPSEEK_MODEL });
+    return;
+  }
+
+  if (request.method === "GET" && requestUrl.pathname === "/api/config") {
+    json(response, 200, {
+      supabase: {
+        enabled: Boolean(SUPABASE_URL && SUPABASE_ANON_KEY),
+        url: SUPABASE_URL,
+        anonKey: SUPABASE_ANON_KEY,
+      },
+    });
     return;
   }
 

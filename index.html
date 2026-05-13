@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
@@ -21,6 +21,18 @@
         </div>
         <p class="eyebrow">AI Emotion Growth Coach</p>
       </header>
+
+      <section class="auth-panel fade-in" aria-label="账号同步">
+        <div class="auth-copy">
+          <p id="auth-status" class="auth-status">本机保存中</p>
+          <p id="cloud-status" class="cloud-status">登录后可跨设备保存画像和聊天记录</p>
+        </div>
+        <form id="auth-form" class="auth-form">
+          <input id="auth-email" type="email" placeholder="输入邮箱同步记录" autocomplete="email" />
+          <button id="auth-submit" class="secondary-button" type="submit">发送登录链接</button>
+        </form>
+        <button id="logout-button" class="secondary-button is-hidden" type="button">退出登录</button>
+      </section>
 
       <section id="home-view" class="view-card view-card-home fade-in is-active">
         <div class="hero-panel">
@@ -130,6 +142,7 @@
       </section>
     </main>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="./app.js"></script>
   </body>
 </html>
