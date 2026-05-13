@@ -58,6 +58,9 @@ create table if not exists public.user_memories (
 -- Compatibility for databases that already had earlier beta tables.
 -- Supabase projects created before this schema may have chat_messages.id as bigint.
 alter table public.user_memories
+  add column if not exists source_message_id text;
+
+alter table public.user_memories
   drop constraint if exists user_memories_source_message_id_fkey;
 
 alter table public.user_memories
@@ -74,6 +77,58 @@ create table if not exists public.growth_records (
   created_at timestamptz not null default now(),
   constraint growth_records_owner_check check (user_id is not null or anonymous_user_id is not null)
 );
+
+-- Compatibility for databases that already had earlier beta tables.
+-- `create table if not exists` does not add new columns to an existing table,
+-- so we explicitly add every column that newer app/database code may reference.
+alter table public.user_profiles
+  add column if not exists user_id uuid references auth.users(id) on delete cascade,
+  add column if not exists anonymous_user_id text,
+  add column if not exists mbti text,
+  add column if not exists mbti_type text,
+  add column if not exists communication_style text,
+  add column if not exists communication_style_description text,
+  add column if not exists cognitive_stack jsonb not null default '[]'::jsonb,
+  add column if not exists test_answers jsonb not null default '[]'::jsonb,
+  add column if not exists created_at timestamptz not null default now(),
+  add column if not exists updated_at timestamptz not null default now();
+
+alter table public.chat_messages
+  add column if not exists user_id uuid references auth.users(id) on delete cascade,
+  add column if not exists anonymous_user_id text,
+  add column if not exists role text,
+  add column if not exists content text,
+  add column if not exists topic_tag text,
+  add column if not exists emotion_tag text,
+  add column if not exists mbti_type text,
+  add column if not exists communication_style text,
+  add column if not exists created_at timestamptz not null default now();
+
+alter table public.conversation_summaries
+  add column if not exists user_id uuid references auth.users(id) on delete cascade,
+  add column if not exists anonymous_user_id text,
+  add column if not exists summary text,
+  add column if not exists topic_tag text,
+  add column if not exists emotion_tag text,
+  add column if not exists created_at timestamptz not null default now();
+
+alter table public.user_memories
+  add column if not exists user_id uuid references auth.users(id) on delete cascade,
+  add column if not exists anonymous_user_id text,
+  add column if not exists memory text,
+  add column if not exists memory_type text,
+  add column if not exists importance integer not null default 3,
+  add column if not exists source_message_id text,
+  add column if not exists created_at timestamptz not null default now(),
+  add column if not exists updated_at timestamptz not null default now();
+
+alter table public.growth_records
+  add column if not exists user_id uuid references auth.users(id) on delete cascade,
+  add column if not exists anonymous_user_id text,
+  add column if not exists title text,
+  add column if not exists summary text,
+  add column if not exists signals jsonb not null default '{}'::jsonb,
+  add column if not exists created_at timestamptz not null default now();
 
 create or replace function public.set_updated_at()
 returns trigger
