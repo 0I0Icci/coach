@@ -436,27 +436,6 @@ const server = http.createServer(async (request, response) => {
           }), null)
           : null;
 
-        let savedSummary = null;
-        if (!opening && canUseMemory) {
-          try {
-            const summary = await createConversationSummary({
-              message: String(message).trim(),
-              reply: aiResult.reply,
-              topic_tag,
-              emotion_tag,
-            });
-
-            savedSummary = await safeDatabaseCall(() => saveConversationSummary({
-              ...owner,
-              summary,
-              topic_tag,
-              emotion_tag,
-            }), null);
-          } catch (summaryError) {
-            console.warn("Conversation summary skipped:", summaryError.message || summaryError);
-          }
-        }
-
         json(response, 200, {
           ...aiResult,
           topic_tag,
@@ -464,9 +443,27 @@ const server = http.createServer(async (request, response) => {
           stored: {
             userMessageId: userMessage?.id || null,
             assistantMessageId: assistantMessage?.id || null,
-            summaryId: savedSummary?.id || null,
+            summaryId: null,
           },
         });
+
+        if (!opening && canUseMemory) {
+          createConversationSummary({
+            message: String(message).trim(),
+            reply: aiResult.reply,
+            topic_tag,
+            emotion_tag,
+          })
+            .then((summary) => safeDatabaseCall(() => saveConversationSummary({
+              ...owner,
+              summary,
+              topic_tag,
+              emotion_tag,
+            }), null))
+            .catch((summaryError) => {
+              console.warn("Conversation summary skipped:", summaryError.message || summaryError);
+            });
+        }
       } catch (error) {
         json(response, 500, { error: error.message || "Unexpected server error." });
       }

@@ -335,7 +335,7 @@ async function requestAssistantReply({ message = "", opening = false }) {
       const record = createGrowthRecord(message, data.reply);
       appState.growthRecords.unshift(record);
       appState.growthRecords = appState.growthRecords.slice(0, MAX_GROWTH_RECORDS);
-      await saveCloudGrowthRecord(record);
+      saveCloudGrowthRecord(record).catch((error) => console.warn("Unable to save growth record.", error));
       updateProfileView();
     }
     saveStoredState();
