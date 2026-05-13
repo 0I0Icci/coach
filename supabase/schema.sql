@@ -47,11 +47,21 @@ create table if not exists public.user_memories (
   memory text not null,
   memory_type text not null check (memory_type in ('preference', 'pain_point', 'relationship', 'goal', 'growth')),
   importance integer not null default 3 check (importance between 1 and 5),
-  source_message_id uuid references public.chat_messages(id) on delete set null,
+  -- Kept as text so it can reference either an older bigint chat_messages.id
+  -- or a newer uuid chat_messages.id during lightweight beta migrations.
+  source_message_id text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   constraint user_memories_owner_check check (user_id is not null or anonymous_user_id is not null)
 );
+
+-- Compatibility for databases that already had earlier beta tables.
+-- Supabase projects created before this schema may have chat_messages.id as bigint.
+alter table public.user_memories
+  drop constraint if exists user_memories_source_message_id_fkey;
+
+alter table public.user_memories
+  alter column source_message_id type text using source_message_id::text;
 
 -- Optional growth display table. Kept because the current product already has a growth page.
 create table if not exists public.growth_records (
