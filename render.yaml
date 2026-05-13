@@ -3,7 +3,7 @@ services:
     name: echomind-api-0i0icci
     runtime: node
     autoDeploy: true
-    buildCommand: ""
+    buildCommand: npm install
     startCommand: node server.js
     healthCheckPath: /health
     envVars:
@@ -14,6 +14,8 @@ services:
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
       - key: PORT
         value: 10000
