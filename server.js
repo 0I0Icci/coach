@@ -85,6 +85,7 @@ function buildInstructions({ mbtiType, communicationStyle, cognitiveStack }) {
     `用户沟通偏好：${communicationStyle || "Companion"}。${toneRule}`,
     "默认回答结构：先回应当下感受，再给一点点澄清，最后给一个轻量下一步。",
     "除非用户明确要求，不要一次给太多步骤。",
+    "回复必须完整收束，不要在句子、编号或 markdown 标记中途结束。",
   ].join("\n");
 }
 
@@ -235,7 +236,7 @@ function extractReply(data) {
   return "";
 }
 
-async function callDeepSeek(messages, { maxTokens = 500, temperature = 0.7 } = {}) {
+async function callDeepSeek(messages, { maxTokens = 1000, temperature = 0.7 } = {}) {
   if (!DEEPSEEK_API_KEY) {
     throw new Error("DEEPSEEK_API_KEY is missing. Create a .env file from .env.example and fill in your key.");
   }
@@ -277,7 +278,7 @@ async function callDeepSeek(messages, { maxTokens = 500, temperature = 0.7 } = {
 async function createDeepSeekResponse({ message, history, mbtiType, communicationStyle, cognitiveStack, opening, memoryContext }) {
   return callDeepSeek(
     buildMessages({ message, history, opening, mbtiType, communicationStyle, cognitiveStack, memoryContext }),
-    { maxTokens: 500, temperature: 0.7 },
+    { maxTokens: 1000, temperature: 0.7 },
   );
 }
 
