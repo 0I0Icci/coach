@@ -17,10 +17,31 @@ create table if not exists public.user_profiles (
   constraint user_profiles_owner_check check (user_id is not null or anonymous_user_id is not null)
 );
 
+create table if not exists public.conversation_sessions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users(id) on delete cascade,
+  anonymous_user_id text,
+  session_id text not null,
+  topic text,
+  core_need text,
+  state text not null default 'emotion_intake',
+  style text not null default 'Companion',
+  understanding_score numeric not null default 0 check (understanding_score between 0 and 1),
+  info_completeness jsonb not null default '{}'::jsonb,
+  total_turns integer not null default 0,
+  insights jsonb not null default '[]'::jsonb,
+  is_completed boolean not null default false,
+  started_at timestamptz not null default now(),
+  completed_at timestamptz,
+  last_activity_at timestamptz not null default now(),
+  constraint conversation_sessions_owner_check check (user_id is not null or anonymous_user_id is not null)
+);
+
 create table if not exists public.chat_messages (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references auth.users(id) on delete cascade,
   anonymous_user_id text,
+  session_id text,
   role text not null check (role in ('user', 'assistant')),
   content text not null,
   topic_tag text,
@@ -71,6 +92,7 @@ create table if not exists public.growth_records (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references auth.users(id) on delete cascade,
   anonymous_user_id text,
+  session_id text,
   title text not null,
   summary text,
   signals jsonb not null default '{}'::jsonb,
@@ -96,6 +118,7 @@ alter table public.user_profiles
 alter table public.chat_messages
   add column if not exists user_id uuid references auth.users(id) on delete cascade,
   add column if not exists anonymous_user_id text,
+  add column if not exists session_id text,
   add column if not exists role text,
   add column if not exists content text,
   add column if not exists topic_tag text,
@@ -125,6 +148,7 @@ alter table public.user_memories
 alter table public.growth_records
   add column if not exists user_id uuid references auth.users(id) on delete cascade,
   add column if not exists anonymous_user_id text,
+  add column if not exists session_id text,
   add column if not exists title text,
   add column if not exists summary text,
   add column if not exists signals jsonb not null default '{}'::jsonb,
@@ -150,14 +174,19 @@ create trigger set_user_memories_updated_at
 before update on public.user_memories
 for each row execute function public.set_updated_at();
 
+create index if not exists idx_conversation_sessions_user on public.conversation_sessions(user_id, last_activity_at desc);
+create index if not exists idx_conversation_sessions_lookup on public.conversation_sessions(user_id, session_id);
 create index if not exists idx_chat_messages_user_created on public.chat_messages(user_id, created_at desc);
 create index if not exists idx_chat_messages_anon_created on public.chat_messages(anonymous_user_id, created_at desc);
 create index if not exists idx_chat_messages_topic on public.chat_messages(user_id, topic_tag, created_at desc);
+create index if not exists idx_chat_messages_session on public.chat_messages(user_id, session_id, created_at desc);
 create index if not exists idx_conversation_summaries_topic on public.conversation_summaries(user_id, topic_tag, created_at desc);
 create index if not exists idx_user_memories_type_importance on public.user_memories(user_id, memory_type, importance desc, created_at desc);
 create index if not exists idx_growth_records_user_created on public.growth_records(user_id, created_at desc);
+create index if not exists idx_growth_records_session on public.growth_records(user_id, session_id);
 
 alter table public.user_profiles enable row level security;
+alter table public.conversation_sessions enable row level security;
 alter table public.chat_messages enable row level security;
 alter table public.conversation_summaries enable row level security;
 alter table public.user_memories enable row level security;
@@ -168,6 +197,9 @@ drop policy if exists "Users can insert their own profile" on public.user_profil
 drop policy if exists "Users can update their own profile" on public.user_profiles;
 drop policy if exists "Users can read their own chat messages" on public.chat_messages;
 drop policy if exists "Users can insert their own chat messages" on public.chat_messages;
+drop policy if exists "Users can read their own sessions" on public.conversation_sessions;
+drop policy if exists "Users can insert their own sessions" on public.conversation_sessions;
+drop policy if exists "Users can update their own sessions" on public.conversation_sessions;
 drop policy if exists "Users can read their own summaries" on public.conversation_summaries;
 drop policy if exists "Users can insert their own summaries" on public.conversation_summaries;
 drop policy if exists "Users can read their own memories" on public.user_memories;
@@ -186,6 +218,19 @@ with check ((select auth.uid()) = user_id);
 
 create policy "Users can update their own profile"
 on public.user_profiles for update to authenticated
+using ((select auth.uid()) = user_id)
+with check ((select auth.uid()) = user_id);
+
+create policy "Users can read their own sessions"
+on public.conversation_sessions for select to authenticated
+using ((select auth.uid()) = user_id);
+
+create policy "Users can insert their own sessions"
+on public.conversation_sessions for insert to authenticated
+with check ((select auth.uid()) = user_id);
+
+create policy "Users can update their own sessions"
+on public.conversation_sessions for update to authenticated
 using ((select auth.uid()) = user_id)
 with check ((select auth.uid()) = user_id);
 

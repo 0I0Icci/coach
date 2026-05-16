@@ -7,7 +7,21 @@ const {
   getUserProfile,
   saveChatMessage,
   saveConversationSummary,
+  saveGrowthRecord,
 } = require("./supabaseService");
+
+const {
+  createInitialSessionState,
+  buildDialogueSystemPrompt,
+  buildStateAnalysisPrompt,
+  parseStateAnalysis,
+  applyStateAnalysis,
+  shouldGenerateGrowthSummary,
+  buildGrowthSummaryPrompt,
+  parseGrowthSummary,
+  buildOpeningPrompt,
+  DIALOGUE_STATES,
+} = require("./dialogueEngine");
 
 const projectRoot = __dirname;
 const mimeTypes = {
@@ -54,13 +68,6 @@ const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || "";
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 const MAX_HISTORY_MESSAGES = 24;
 
-const stylePromptMap = {
-  "Emotion-first": "优先共情和接纳感受，再帮助用户慢慢梳理。避免过度讲道理。",
-  "Logic-first": "优先帮助用户厘清发生了什么、逻辑关系和关键矛盾。语气清晰但不过度冷淡。",
-  "Action-first": "优先帮助用户看见可以采取的下一步。回答要具体、简洁、有行动感。",
-  Companion: "优先提供陪伴感和低压力交流，不逼迫用户立刻分析或行动。",
-};
-
 function json(response, statusCode, payload) {
   response.writeHead(statusCode, {
     "Content-Type": "application/json; charset=utf-8",
@@ -69,48 +76,6 @@ function json(response, statusCode, payload) {
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
   });
   response.end(JSON.stringify(payload));
-}
-
-function buildInstructions({ mbtiType, communicationStyle, cognitiveStack }) {
-  const stackText = Array.isArray(cognitiveStack) && cognitiveStack.length ? cognitiveStack.join(" > ") : "未提供";
-
-  return [
-    "你是 EchoMind 的 AI 情绪成长教练，用中文回复。",
-    "你的角色不只是陪伴，更是温和但有深度的成长伙伴。",
-    "每一段对话，你都要有意识地推动用户从当下的感受出发，走向更深的自我理解。",
-    "不要做医学诊断，不要宣称自己是治疗师。",
-    "如果用户出现明显自伤、自杀或他伤风险，鼓励用户立即联系当地紧急支持、可信任的人或专业帮助。",
-    `用户当前 MBTI 参考：${mbtiType || "未提供"}。这只是风格参考，不要把用户刻板化。`,
-    `用户八维认知功能排序：${stackText}。请根据主导/辅助/第三/劣势功能差异调整分析方式和行动建议。`,
-    `用户沟通偏好：${communicationStyle || "Companion"}。`,
-    "",
-    "=== 对话推进框架 ===",
-    "你不用机械地列阶段编号，但要感知当前对话所处的阶段，自然推进。",
-    "",
-    "阶段① · 接住情绪：先承认和接纳感受，让用户感到安全。不急于追问，不跳过情绪直接分析。",
-    "阶段② · 探索来源：从感受进入具体事件。温和引导用户说出发生了什么。判断此刻用户是需要情绪安抚，还是需要解决一个现实问题。",
-    "阶段③ · 分析模式：帮助用户看见自己的思维模式或行为模式，连接历史。识别核心卡点是认知习惯、关系模式还是现实困境。可与 MBTI 或八维做温和参照。",
-    "阶段④ · 引导行动或理解：情绪问题→帮助重新理解自己的反应；现实问题→帮看见可操作的一小步。不给标准答案，帮用户找到自己的答案。",
-    "阶段⑤ · 沉淀成长：提炼本次对话的新认识。让用户带走一个可回味的视角，而不仅是被安慰。",
-    "",
-    "=== 沟通风格适配 ===",
-    "Emotion-first → 在①和②多停留，确认情绪被充分接住后再推进。",
-    "Logic-first → ③和④可以更结构化，帮用户理清因果关系。",
-    "Action-first → ④时给出更具体的行动线索。",
-    "Companion → 全流程保持低压力，不催促推进。",
-    "",
-    "=== 语言边界 ===",
-    "不要使用治疗师式的承诺语言。绝对不要说\"我在这里稳稳地接住你\"、\"我会陪着你\"、\"有我在\"、\"你可以完全信任我\"这类表述。",
-    "你是成长教练，不是治疗师，也不是亲密朋友。保持温和但有边界的伙伴感。",
-    "不要宣称自己能\"治愈\"或\"修复\"用户。",
-    "",
-    "=== 回答规范 ===",
-    "字数灵活：①可短（50-100字），③④可长（200-600字），整体不超过800字。",
-    "语言温和但有力量，不敷衍不机械。",
-    "不要列阶段编号给用户看，不要让用户感觉在被流程化。",
-    "不要使用未闭合的 markdown 粗体、编号或列表；不要在句子中途结束。",
-    "完整比详细更重要；如果空间不够，宁可少说，也必须自然结束。",
-  ].join("\n");
 }
 
 function sanitizeHistory(history) {
@@ -206,28 +171,22 @@ function buildMemoryContext({ profile, summaries, memories, topic_tag, emotion_t
   ].join("\n");
 }
 
-function buildMessages({ message, history, opening, mbtiType, communicationStyle, cognitiveStack, memoryContext }) {
+function buildMessages({ message, history, opening, systemPrompt, sessionState }) {
+  if (opening) {
+    const promptResult = buildOpeningPrompt({
+      mbtiType: sessionState?.mbti_type || '',
+      communicationStyle: sessionState?.style || 'Companion',
+      sessionState,
+    });
+    return promptResult.messages;
+  }
+
   const messages = [
     {
       role: "system",
-      content: buildInstructions({ mbtiType, communicationStyle, cognitiveStack }),
+      content: systemPrompt,
     },
   ];
-
-  if (memoryContext) {
-    messages.push({
-      role: "system",
-      content: memoryContext,
-    });
-  }
-
-  if (opening) {
-    messages.push({
-      role: "user",
-      content: "请根据这个用户的 MBTI 和沟通风格，写一段简短、自然的开场白（2-3句）。先简单欢迎，再传递一种感觉：这是一场可以深入聊的对话。不要太长，不要列点，不要使用治疗师式的承诺语言。",
-    });
-    return messages;
-  }
 
   const safeHistory = sanitizeHistory(history);
   if (safeHistory.length > 0) {
@@ -299,34 +258,12 @@ async function callDeepSeek(messages, { maxTokens = 1000, temperature = 0.7 } = 
   };
 }
 
-async function createDeepSeekResponse({ message, history, mbtiType, communicationStyle, cognitiveStack, opening, memoryContext }) {
-  return callDeepSeek(
-    buildMessages({ message, history, opening, mbtiType, communicationStyle, cognitiveStack, memoryContext }),
-    { maxTokens: 1200, temperature: 0.7 },
-  );
-}
-
-async function createConversationSummary({ message, reply, topic_tag, emotion_tag }) {
-  const summaryResult = await callDeepSeek(
-    [
-      {
-        role: "system",
-        content: "你是对话摘要助手。请用中文输出一句不超过80字的成长记录摘要，只总结事实、情绪和下一步线索，不做诊断。",
-      },
-      {
-        role: "user",
-        content: [
-          `主题标签：${topic_tag || "未识别"}`,
-          `情绪标签：${emotion_tag || "未识别"}`,
-          `用户输入：${message}`,
-          `AI回复：${reply}`,
-        ].join("\n"),
-      },
-    ],
-    { maxTokens: 160, temperature: 0.2 },
-  );
-
-  return summaryResult.reply;
+async function createDeepSeekResponse({ message, history, opening, systemPrompt, sessionState, maxTokens, temperature }) {
+  const promptResult = buildMessages({ message, history, opening, systemPrompt, sessionState });
+  return callDeepSeek(promptResult, {
+    maxTokens: maxTokens || 1200,
+    temperature: temperature || 0.7,
+  });
 }
 
 function serveStaticFile(requestPath, response) {
@@ -398,12 +335,27 @@ const server = http.createServer(async (request, response) => {
           anonymous_user_id = null,
           topic_tag: providedTopic = null,
           emotion_tag: providedEmotion = null,
+          session_state = null,
         } = payload;
 
         if (!opening && !String(message).trim()) {
           json(response, 400, { error: "Message is required." });
           return;
         }
+
+        // --- 对话状态初始化 ---
+        const safeStyle = communicationStyle || 'Companion';
+        const safeMbti = mbtiType || '';
+
+        // 如果有 session_state 则继续，否则创建新的
+        const currentState = session_state && session_state.session_id
+          ? { ...session_state }
+          : createInitialSessionState({ style: safeStyle, mbtiType: safeMbti });
+
+        // 如果是开场白，重置状态（新 session）
+        const sessionState = opening
+          ? createInitialSessionState({ style: safeStyle, mbtiType: safeMbti })
+          : currentState;
 
         const owner = { user_id, anonymous_user_id };
         const canUseMemory = hasOwner(owner) && hasDatabaseAccess();
@@ -413,6 +365,7 @@ const server = http.createServer(async (request, response) => {
         const topic_tag = providedTopic || tags.topic_tag;
         const emotion_tag = providedEmotion || tags.emotion_tag;
 
+        // --- 保存用户消息 ---
         const userMessage = !opening && canUseMemory
           ? await safeDatabaseCall(() => saveChatMessage({
             ...owner,
@@ -420,9 +373,11 @@ const server = http.createServer(async (request, response) => {
             content: String(message).trim(),
             topic_tag,
             emotion_tag,
+            session_id: sessionState.session_id,
           }), null)
           : null;
 
+        // --- 加载用户画像和记忆 ---
         const profile = canUseMemory
           ? await safeDatabaseCall(() => getUserProfile(owner), null)
           : null;
@@ -435,22 +390,31 @@ const server = http.createServer(async (request, response) => {
         const memoryContext = canUseMemory
           ? buildMemoryContext({ profile, summaries, memories, topic_tag, emotion_tag })
           : "";
-        const resolvedMbtiType = profile?.mbti || profile?.mbti_type || mbtiType;
-        const resolvedCommunicationStyle = profile?.communication_style || communicationStyle;
+        const resolvedMbtiType = profile?.mbti || profile?.mbti_type || safeMbti;
+        const resolvedCommunicationStyle = profile?.communication_style || safeStyle;
         const resolvedCognitiveStack = Array.isArray(profile?.cognitive_stack) && profile.cognitive_stack.length
           ? profile.cognitive_stack
           : cognitiveStack;
 
-        const aiResult = await createDeepSeekResponse({
-          message: String(message).trim(),
-          history,
+        // --- 构建成长引导型系统指令 ---
+        const systemPrompt = buildDialogueSystemPrompt({
           mbtiType: resolvedMbtiType,
           communicationStyle: resolvedCommunicationStyle,
           cognitiveStack: resolvedCognitiveStack,
-          opening,
           memoryContext,
+          sessionState,
         });
 
+        // --- 调用 AI ---
+        const aiResult = await createDeepSeekResponse({
+          message: String(message).trim(),
+          history,
+          opening,
+          systemPrompt,
+          sessionState,
+        });
+
+        // --- 保存 AI 回复 ---
         const assistantMessage = !opening && canUseMemory
           ? await safeDatabaseCall(() => saveChatMessage({
             ...owner,
@@ -458,13 +422,23 @@ const server = http.createServer(async (request, response) => {
             content: aiResult.reply,
             topic_tag,
             emotion_tag,
+            session_id: sessionState.session_id,
           }), null)
           : null;
+
+        // 更新 session 轮数（同步部分，不等待分析）
+        const returnedState = {
+          ...sessionState,
+          turns_in_state: (sessionState.turns_in_state || 0) + 1,
+          total_turns: (sessionState.total_turns || 0) + 1,
+          last_activity_at: new Date().toISOString(),
+        };
 
         json(response, 200, {
           ...aiResult,
           topic_tag,
           emotion_tag,
+          session_state: returnedState,
           stored: {
             userMessageId: userMessage?.id || null,
             assistantMessageId: assistantMessage?.id || null,
@@ -472,22 +446,80 @@ const server = http.createServer(async (request, response) => {
           },
         });
 
-        if (!opening && canUseMemory) {
-          createConversationSummary({
-            message: String(message).trim(),
-            reply: aiResult.reply,
-            topic_tag,
-            emotion_tag,
-          })
-            .then((summary) => safeDatabaseCall(() => saveConversationSummary({
-              ...owner,
-              summary,
-              topic_tag,
-              emotion_tag,
-            }), null))
-            .catch((summaryError) => {
-              console.warn("Conversation summary skipped:", summaryError.message || summaryError);
+        // --- 后台分析：状态评估 + 成长摘要（非阻塞）---
+        if (!opening && canUseMemory && message.trim()) {
+          (async () => {
+            // 1. 状态分析
+            const analysisPrompt = buildStateAnalysisPrompt({
+              currentState: sessionState.state,
+              style: resolvedCommunicationStyle,
+              coreNeed: sessionState.core_need,
+              userMessage: String(message).trim(),
+              aiReply: aiResult.reply,
+              topic: sessionState.topic,
             });
+
+            try {
+              const analysisResult = await callDeepSeek(analysisPrompt.messages, {
+                maxTokens: analysisPrompt.maxTokens || 500,
+                temperature: analysisPrompt.temperature || 0.1,
+              });
+              const analysis = parseStateAnalysis(analysisResult.reply);
+
+              if (analysis) {
+                const updated = applyStateAnalysis(sessionState, analysis);
+
+                // 2. 检查是否需要生成成长摘要
+                if (shouldGenerateGrowthSummary(updated)) {
+                  try {
+                    const growthPrompt = buildGrowthSummaryPrompt(updated, [
+                      { role: 'user', content: String(message).trim() },
+                      { role: 'assistant', content: aiResult.reply },
+                    ]);
+                    const growthResult = await callDeepSeek(growthPrompt.messages, {
+                      maxTokens: growthPrompt.maxTokens || 500,
+                      temperature: growthPrompt.temperature || 0.3,
+                    });
+                    const growth = parseGrowthSummary(growthResult.reply);
+
+                    if (growth) {
+                      // 保存成长记录到数据库
+                      await safeDatabaseCall(() => saveGrowthRecord({
+                        ...owner,
+                        title: growth.title || '一次新的成长记录',
+                        summary: growth.summary || '',
+                        signals: {
+                          event: growth.event,
+                          emotion: growth.emotion,
+                          coreConflict: growth.core_conflict,
+                          userPattern: growth.user_pattern,
+                          growth: growth.growth,
+                          focusFunction: resolvedCognitiveStack?.[0] || null,
+                          mbtiType: resolvedMbtiType,
+                          communicationStyle: resolvedCommunicationStyle,
+                          sessionId: sessionState.session_id,
+                          topic: updated.topic,
+                          coreNeed: updated.core_need,
+                        },
+                      }), null);
+
+                      // 同时保存简短摘要用于历史上下文
+                      await safeDatabaseCall(() => saveConversationSummary({
+                        ...owner,
+                        summary: growth.summary || '完成了新一轮成长对话。',
+                        topic_tag,
+                        emotion_tag,
+                      }), null);
+                    }
+                  } catch (innerErr) {
+                    console.warn("Growth summary generation skipped:", innerErr.message);
+                  }
+                }
+              }
+            } catch (analysisError) {
+              console.warn("State analysis skipped:", analysisError.message || analysisError);
+            }
+          })();
         }
       } catch (error) {
         json(response, 500, { error: error.message || "Unexpected server error." });

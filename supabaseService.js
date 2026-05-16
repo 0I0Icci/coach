@@ -199,6 +199,113 @@ async function saveConversationSummary({
   }
 }
 
+async function saveGrowthRecord({
+  user_id = null,
+  anonymous_user_id = null,
+  title,
+  summary,
+  signals = {},
+} = {}) {
+  try {
+    requireOwner({ user_id, anonymous_user_id });
+
+    if (!title || !String(title).trim()) {
+      throw new Error("title is required.");
+    }
+
+    const { data, error } = await getSupabaseAdmin()
+      .from("growth_records")
+      .insert({
+        ...ownerPayload({ user_id, anonymous_user_id }),
+        session_id: signals.sessionId || null,
+        title: String(title).trim(),
+        summary: summary ? String(summary).trim() : '',
+        signals,
+      })
+      .select()
+      .single();
+
+    return result(data, error);
+  } catch (error) {
+    return result(null, error);
+  }
+}
+
+async function saveSession({
+  user_id = null,
+  anonymous_user_id = null,
+  session_id,
+  state,
+  style = 'Companion',
+  topic = null,
+  core_need = null,
+  understanding_score = 0,
+  info_completeness = {},
+  total_turns = 0,
+  insights = [],
+  is_completed = false,
+} = {}) {
+  try {
+    requireOwner({ user_id, anonymous_user_id });
+
+    if (!session_id) {
+      throw new Error("session_id is required.");
+    }
+
+    const { data, error } = await getSupabaseAdmin()
+      .from("conversation_sessions")
+      .upsert({
+        ...ownerPayload({ user_id, anonymous_user_id }),
+        session_id,
+        state,
+        style,
+        topic,
+        core_need,
+        understanding_score,
+        info_completeness,
+        total_turns,
+        insights,
+        is_completed,
+        completed_at: is_completed ? new Date().toISOString() : null,
+        last_activity_at: new Date().toISOString(),
+      }, { onConflict: 'user_id,session_id', ignoreDuplicates: false })
+      .select()
+      .single();
+
+    return result(data, error);
+  } catch (error) {
+    return result(null, error);
+  }
+}
+
+async function getSession({
+  user_id = null,
+  anonymous_user_id = null,
+  session_id,
+} = {}) {
+  try {
+    requireOwner({ user_id, anonymous_user_id });
+
+    if (!session_id) {
+      throw new Error("session_id is required.");
+    }
+
+    let query = getSupabaseAdmin()
+      .from("conversation_sessions")
+      .select("session_id, state, style, topic, core_need, understanding_score, info_completeness, total_turns, insights, is_completed, started_at, last_activity_at")
+      .eq("session_id", session_id)
+      .limit(1)
+      .maybeSingle();
+
+    query = applyOwnerFilter(query, { user_id, anonymous_user_id });
+
+    const { data, error } = await query;
+    return result(data, error);
+  } catch (error) {
+    return result(null, error);
+  }
+}
+
 async function getRelevantSummaries({
   user_id = null,
   anonymous_user_id = null,
@@ -321,6 +428,9 @@ module.exports = {
   upsertUserProfile,
   saveChatMessage,
   saveConversationSummary,
+  saveGrowthRecord,
+  saveSession,
+  getSession,
   getRelevantSummaries,
   saveUserMemory,
   getUserMemories,

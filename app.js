@@ -133,6 +133,7 @@ const resultTitle = document.getElementById("result-title");
 const resultDescription = document.getElementById("result-description");
 const startChatButton = document.getElementById("start-chat-button");
 const chatMbtiBadge = document.getElementById("chat-mbti-badge");
+const chatStateBadge = document.getElementById("chat-state-badge");
 const chatStyleBadge = document.getElementById("chat-style-badge");
 const chatMessages = document.getElementById("chat-messages");
 const chatForm = document.getElementById("chat-form");
@@ -157,6 +158,7 @@ const growthList = document.getElementById("growth-list");
 const appState = {
   mbtiType: "", currentQuestionIndex: 0, answers: new Array(communicationQuestions.length).fill(null), resultKey: "",
   previousResponseId: "", isWaitingForReply: false, conversationHistory: [], growthRecords: [],
+  sessionState: null,
 };
 
 const cloudState = { client: null, user: null, enabled: false, ready: false };
@@ -204,6 +206,7 @@ function loadStoredState() {
     appState.resultKey = resultDescriptions[storedState.resultKey] ? storedState.resultKey : "";
     appState.conversationHistory = normalizeStoredHistory(storedState.conversationHistory);
     appState.growthRecords = normalizeGrowthRecords(storedState.growthRecords);
+    appState.sessionState = storedState.sessionState || null;
     hydrateAnswers(storedState.answers);
   } catch (error) { console.warn("Unable to load saved EchoMind state.", error); }
 }
@@ -212,7 +215,9 @@ function saveStoredState() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
       mbtiType: appState.mbtiType, resultKey: appState.resultKey, answers: serializeAnswers(),
-      conversationHistory: appState.conversationHistory.slice(-MAX_STORED_MESSAGES), growthRecords: appState.growthRecords.slice(0, MAX_GROWTH_RECORDS),
+      conversationHistory: appState.conversationHistory.slice(-MAX_STORED_MESSAGES),
+      growthRecords: appState.growthRecords.slice(0, MAX_GROWTH_RECORDS),
+      sessionState: appState.sessionState,
       updatedAt: new Date().toISOString(),
     }));
   } catch (error) { console.warn("Unable to save EchoMind state.", error); }
@@ -318,17 +323,42 @@ function createGrowthRecord(userText, assistantText) {
   const stack = getCognitiveStack();
   const focusFunction = stack[0] || "";
   const fn = cognitiveFunctionDescriptions[focusFunction];
-  const summary = `你把“${userText.slice(0, 28)}${userText.length > 28 ? "..." : ""}”带进了对话，并获得了一次围绕${fn?.theme || "自我理解"}的整理。`;
-  return { id: crypto.randomUUID?.() || String(Date.now()), title: "完成一次情绪整理", summary, focusFunction, createdAt: new Date().toISOString() };
+  const session = appState.sessionState;
+  const stateLabel = session?.state || "emotion_intake";
+  const stateNames = { emotion_intake: "情绪接收", source_exploration: "来源探索", pattern_reflection: "模式觉察", action_integration: "行动整合" };
+  const stateName = stateNames[stateLabel] || "自我理解";
+  const topic = session?.topic ? `围绕“${session.topic}”` : "";
+  const needInfo = session?.core_need ? `（核心需求：${session.core_need.slice(0, 30)}）` : "";
+  const summary = topic
+    ? `${topic}${needInfo}——当前处于${stateName}阶段，有了新的觉察。`
+    : `你把“${userText.slice(0, 20)}${userText.length > 20 ? "..." : ""}”带进了对话，进入${stateName}阶段，获得了一次围绕${fn?.theme || "自我理解"}的整理。`;
+  const turn = session?.total_turns || 0;
+  const title = turn > 4 && session?.state === "action_integration" ? "完成一轮深度成长" : "一次新的梳理";
+  return { id: crypto.randomUUID?.() || String(Date.now()), title, summary, focusFunction, createdAt: new Date().toISOString() };
 }
 
 async function requestAssistantReply({ message = "", opening = false }) {
   setChatPending(true);
   try {
-    const response = await fetch(`${API_BASE_URL}/api/chat`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message, opening, user_id: cloudState.user?.id || null, mbtiType: appState.mbtiType, communicationStyle: appState.resultKey, cognitiveStack: getCognitiveStack(), history: appState.conversationHistory }) });
+    const response = await fetch(`${API_BASE_URL}/api/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message,
+        opening,
+        user_id: cloudState.user?.id || null,
+        mbtiType: appState.mbtiType,
+        communicationStyle: appState.resultKey,
+        cognitiveStack: getCognitiveStack(),
+        history: appState.conversationHistory,
+        session_state: appState.sessionState,
+      }),
+    });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || "AI 服务暂时不可用。请稍后再试。");
     appState.previousResponseId = data.responseId || appState.previousResponseId;
+    appState.sessionState = data.session_state || appState.sessionState;
+    updateChatStateBadge();
     appendMessage("assistant", data.reply);
     appState.conversationHistory.push({ role: "assistant", content: data.reply });
     if (!opening && message) {
@@ -344,11 +374,31 @@ async function requestAssistantReply({ message = "", opening = false }) {
 }
 
 function seedChat({ preserveHistory = false } = {}) {
-  if (!preserveHistory) { chatMessages.innerHTML = ""; appState.conversationHistory = []; }
+  if (!preserveHistory) { chatMessages.innerHTML = ""; appState.conversationHistory = []; appState.sessionState = null; }
   const result = resultDescriptions[appState.resultKey];
   chatMbtiBadge.textContent = `MBTI：${appState.mbtiType}`;
+  chatStateBadge.textContent = '状态：等待开始';
+  chatStateBadge.className = 'chat-badge chat-badge-state';
   chatStyleBadge.textContent = `风格：${result?.label || "未识别"}`;
-  if (preserveHistory) renderStoredMessages();
+  if (preserveHistory) { renderStoredMessages(); updateChatStateBadge(); }
+}
+
+function updateChatStateBadge() {
+  const session = appState.sessionState;
+  if (!session || !session.state) {
+    chatStateBadge.textContent = '状态：等待开始';
+    chatStateBadge.className = 'chat-badge chat-badge-state';
+    return;
+  }
+  const stateNames = {
+    emotion_intake: '情绪接收',
+    source_exploration: '来源探索',
+    pattern_reflection: '模式觉察',
+    action_integration: '行动整合',
+  };
+  const label = stateNames[session.state] || session.state;
+  chatStateBadge.textContent = `状态：${label}`;
+  chatStateBadge.className = `chat-badge chat-badge-state ${session.state}`;
 }
 
 function updateProfileView() {
