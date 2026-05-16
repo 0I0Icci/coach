@@ -397,8 +397,9 @@ function updateChatStateBadge() {
     action_integration: '行动整合',
   };
   const label = stateNames[session.state] || session.state;
-  chatStateBadge.textContent = `状态：${label}`;
-  chatStateBadge.className = `chat-badge chat-badge-state ${session.state}`;
+  const slowSuffix = session.slow_mode ? ' · 慢' : '';
+  chatStateBadge.textContent = `状态：${label}${slowSuffix}`;
+  chatStateBadge.className = `chat-badge chat-badge-state ${session.state}${session.slow_mode ? ' slow-mode' : ''}`;
 }
 
 function updateProfileView() {

@@ -21,6 +21,7 @@ const {
   parseGrowthSummary,
   buildOpeningPrompt,
   DIALOGUE_STATES,
+  detectSlowMode,
 } = require("./dialogueEngine");
 
 const projectRoot = __dirname;
@@ -356,6 +357,11 @@ const server = http.createServer(async (request, response) => {
         const sessionState = opening
           ? createInitialSessionState({ style: safeStyle, mbtiType: safeMbti })
           : currentState;
+
+        // 检测是否需要激活慢模式
+        if (!opening && message && detectSlowMode(message)) {
+          sessionState.slow_mode = true;
+        }
 
         const owner = { user_id, anonymous_user_id };
         const canUseMemory = hasOwner(owner) && hasDatabaseAccess();

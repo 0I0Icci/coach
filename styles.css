@@ -493,8 +493,10 @@ h3 {
   background: rgba(218, 54, 190, 0.1);
   color: #8a1b7a;
 }
-  color: var(--muted);
-  font-size: 0.92rem;
+
+.chat-badge-state.slow-mode {
+  border-style: dashed;
+  opacity: 0.85;
 }
 
 .chat-messages {
