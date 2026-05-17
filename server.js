@@ -22,6 +22,8 @@ const {
   buildOpeningPrompt,
   DIALOGUE_STATES,
   detectSlowMode,
+  shouldResetSession,
+  resetSessionForNewTopic,
 } = require("./dialogueEngine");
 
 const projectRoot = __dirname;
@@ -68,6 +70,10 @@ const SUPABASE_URL = process.env.SUPABASE_URL || "";
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || "";
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 const MAX_HISTORY_MESSAGES = 24;
+
+// 后台状态分析结果缓存（session_id → 分析后的 state）
+// 使分析结果能在下一次请求时生效
+const analyzedStateCache = new Map();
 
 function json(response, statusCode, payload) {
   response.writeHead(statusCode, {
@@ -358,6 +364,24 @@ const server = http.createServer(async (request, response) => {
           ? createInitialSessionState({ style: safeStyle, mbtiType: safeMbti })
           : currentState;
 
+        // 合并后台分析结果缓存（让上一轮的分析结果在本轮生效）
+        if (!opening && analyzedStateCache.has(sessionState.session_id)) {
+          const cached = analyzedStateCache.get(sessionState.session_id);
+          Object.assign(sessionState, cached);
+        }
+
+        // 新话题检测与状态重置
+        if (!opening && message) {
+          const lastUserMsg = sessionState.last_user_message || '';
+          const resetCheck = shouldResetSession(sessionState, String(message).trim(), lastUserMsg);
+          if (resetCheck.shouldReset) {
+            console.log(`[Session Reset] ${resetCheck.reason}`);
+            const resetState = resetSessionForNewTopic(sessionState);
+            Object.assign(sessionState, resetState);
+            sessionState.needs_opening = true;
+          }
+        }
+
         // 检测是否需要激活慢模式
         if (!opening && message && detectSlowMode(message)) {
           sessionState.slow_mode = true;
@@ -438,6 +462,8 @@ const server = http.createServer(async (request, response) => {
           turns_in_state: (sessionState.turns_in_state || 0) + 1,
           total_turns: (sessionState.total_turns || 0) + 1,
           last_activity_at: new Date().toISOString(),
+          last_user_message: String(message).trim() || sessionState.last_user_message,
+          needs_opening: false, // 只在一轮生效，下一轮清除
         };
 
         json(response, 200, {
@@ -474,6 +500,14 @@ const server = http.createServer(async (request, response) => {
 
               if (analysis) {
                 const updated = applyStateAnalysis(sessionState, analysis);
+
+                // 缓存分析后的状态供下一次请求使用
+                analyzedStateCache.set(sessionState.session_id, updated);
+                // 限制缓存大小，防止内存泄漏
+                if (analyzedStateCache.size > 100) {
+                  const firstKey = analyzedStateCache.keys().next().value;
+                  analyzedStateCache.delete(firstKey);
+                }
 
                 // 2. 检查是否需要生成成长摘要
                 if (shouldGenerateGrowthSummary(updated)) {

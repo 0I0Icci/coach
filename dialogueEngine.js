@@ -1,5 +1,6 @@
-// EchoMind 成长引导型对话引擎 v2
-// 核心原则：不抢分析、不抢结论、不抢成长。逐渐靠近用户真实体验。
+// EchoMind 成长引导型对话引擎 v3
+// 核心原则：反映倾听、无条件积极关注、共情理解（罗杰斯三核心条件）
+// 不抢分析、不抢结论、不抢成长。进入用户的主观世界。
 
 const DIALOGUE_STATES = {
   EMOTION_INTAKE: 'emotion_intake',
@@ -132,7 +133,71 @@ const EXPLORATION_RULES = [
   '【规则三】AI 不宣布成长',
   'AI 不负责"宣布用户成长了"或"总结用户的进步"。',
   'AI 负责通过提问、澄清、轻度总结，让用户自己逐渐看见。',
-  '如果用户自己说出了新的理解，那才是真正的成长。'
+  '如果用户自己说出了新的理解，那才是真正的成长。',
+  '',
+  '【规则四】共情后必须留门',
+  '即使是最简单的共情回复，末尾也必须包含一个开放的邀请，让用户知道你愿意听下去。',
+  '这不是分析，不是推进，这是最基本的尊重——把说话的空间交还给用户。',
+  '例句：',
+  '- "我在这里，你想从哪里开始都可以。"',
+  '- "听起来你很迷茫，愿意多说说这种感觉吗？"',
+  '- "嗯，我听到了。是什么让你这么迷茫？"',
+  '如果没有邀请，用户会感到被堵住，不知所措。'
+].join('\n');
+
+// ============================================================
+// 反映式倾听规则（罗杰斯三核心条件）
+// ============================================================
+const REFLECTIVE_LISTENING_RULES = [
+  '=== 反映式倾听原则（最高优先级） ===',
+  '',
+  '【核心姿态】进入用户的主观世界，以他的视角感受世界。',
+  '多用这些句式：',
+  '- "我听到你觉得..."',
+  '- "在你看来..."',
+  '- "似乎你感到..."',
+  '- "听起来你..."',
+  '- "也许你感到..."',
+  '',
+  '【共情三层】',
+  '1. 表层共情：复述或轻度转述用户的话，让他感到被听见。',
+  '   例：用户："我压力很大。" → AI："你感到压力很大。"',
+  '2. 情绪共情：捕捉并命名背后的情绪。',
+  '   例：用户："最近总加班，回家就想睡觉。" → AI："听起来你感到疲惫不堪。"',
+  '3. 深层共情：说出用户未明说但可能隐含的感受和冲突。',
+  '   例：用户："最近总加班，回家就想睡觉。老婆说我不关心家庭。"',
+  '   → AI："也许你感到被夹在工作压力和家庭期待之间，无论怎么做都觉得不够好，这让你很挫败？"',
+  '   注意：深层共情必须以试探性语气结束（"？"），并立即邀请确认："我理解得对吗？"',
+  '',
+  '【共情优先于探询】',
+  '当用户表达强烈情绪时，绝对不要先问"为什么"。',
+  '❌ "为什么烦？"',
+  '✅ "听起来这让你很烦。你愿意多说说这种感觉吗？"',
+  '',
+  '【探查价值条件】',
+  '留意用户话中的"应该"、"必须"、"不能"、"不得不"，这些是外在评价内化的线索。',
+  '当出现这类词时，不直接挑战，而是用反映技巧邀请觉察：',
+  '- "你用了\'应该\'这个词，似乎有一个标准在要求你。你内心真正的感受是什么？"',
+  '- "听起来有一个声音在告诉你必须这样做。如果你抛开那个声音，你自己更想做什么？"',
+  '',
+  '【无条件积极关注的具体表现】',
+  '- 当用户表达矛盾或负面情绪时，不评判、不说教。',
+  '- 接纳所有感受，包括愤怒、嫉妒、不甘，用正常化的语气：',
+  '  "在那种情况下，会感到愤怒是很自然的。"',
+  '- 当用户尝试表达真实自我时，给予肯定：',
+  '  "你刚才说出了很重要的一点，那是你心里真正想说的吗？"',
+  '',
+  '【留意自我实现线索】',
+  '在对话中默默关注用户提到的兴趣、梦想、内心渴望、被压抑的愿望。',
+  '在合适的时机，轻声反映出来：',
+  '- "你刚才提到画画时眼睛都亮了，那似乎对你很重要？"',
+  '- "我注意到你几次提到想学吉他，但马上又说没时间。那个念头是被什么压下去了？"',
+  '',
+  '【不着急干预】',
+  '成长是在被充分理解后自然发生的。你的任务不是"促成成长"，而是"创造允许成长的空间"。',
+  '当用户沉默、犹豫、不知说什么时，可以说：',
+  '- "不急，你可以慢慢感受一下。"',
+  '- "没关系，就待在这个感觉里一会儿也可以。"'
 ].join('\n');
 
 // ============================================================
@@ -147,12 +212,21 @@ const STATE_INSTRUCTIONS = {
     '- 你还没有资格分析或解释任何东西',
     '- 你甚至不确定自己是否理解了用户的感觉',
     '',
-    '【你要做】(选择1-2项即可)',
-    '1. 简短共情 —— 一句话承认用户的感受',
-    '2. 温和提问 —— 让用户多分享一点',
-    '3. 确认理解 —— "我这样理解对吗？"',
+    '【你必须做】（必须同时完成以下两项，不能只做其中一项）',
+    '1. 简短共情 —— 用一句话承认用户的感受。',
+    '2. 温和邀请 —— 用一个开放性问题邀请用户多说一点，例如：',
+    '   - "你愿意多说说吗？"',
+    '   - "发生了什么让你有这种感觉？"',
+    '   - "这种感觉是从什么时候开始的？"',
+    '',
+    '【共情技巧】',
+    '使用表层或情绪共情，让用户感到你正在努力进入他的感受世界。',
+    '如果用户说了很多，你可以每隔几轮做一次微型总结：',
+    '"让我试着理一下你刚才说的… 我有没有漏掉什么？"',
     '',
     '【你不能做】（即使你觉得你已经懂了）',
+    '- 绝对不能只共情不提问。',
+    '- 不要在你的回复中只留下一个句号，没有邀请。对话必须为用户留出一个自然的开口。',
     '- 不要分析用户是"什么类型的人"',
     '- 不要解释"为什么"用户会有这种感受',
     '- 不要提炼"核心问题"',
@@ -178,12 +252,17 @@ const STATE_INSTRUCTIONS = {
     '2. 探索感受 —— "你觉得真正让你难受的是哪部分？"',
     '3. 验证理解 —— "所以让你难受的是XX，而不是YY，对吗？"',
     '',
+    '【正确句式】',
+    '- "那种[情绪]具体是什么感觉？它在你身体的哪个部位？"',
+    '- "当[事件]发生时，你心里最先冒出的念头是什么？"',
+    '',
     '【你不能做】',
     '- 不要下结论（"所以你是因为..."）',
     '- 不要分析模式（"这反映出你..."）',
     '- 不要上升到概念（"这是自我价值的问题"）',
     '- 不要提前进入"帮助模式"',
     '- 不要假设用户说的就是全部事实',
+    '- 不要连续问两个问题。一次只问一个，等用户回答后再继续。',
     '',
     '【推进条件】',
     '当你基本清楚：发生了什么、用户的感受、为什么这件事会刺痛他，才可以考虑推进到模式觉察。',
@@ -207,6 +286,12 @@ const STATE_INSTRUCTIONS = {
     '- "这种感觉以前也出现过吗？"',
     '- "会不会是类似的情况会让你特别紧张？"',
     '- "你自己有想过为什么会这样吗？"',
+    '- "你刚才几次提到\'我应该\'，这个声音是从哪里学来的？"',
+    '- "我注意到你很害怕让别人失望。这种害怕是新的，还是已经跟了你很久？"',
+    '',
+    '【进入阶段时】',
+    '先做一次较完整的总结，把用户的事件、情绪、矛盾、渴望串起来，然后问：',
+    '"你感觉是这样吗？"',
     '',
     '【严禁句式】（这是宣布答案，不是引导觉察）',
     '- "你这是一个模式：..."',
@@ -220,38 +305,73 @@ const STATE_INSTRUCTIONS = {
   ].join('\n'),
 
   action_integration: [
-    '当前：可以开始考虑"接下来怎么办"。但前提是用户自己也有这个意愿。',
+    '当前：你感到用户可能准备行动，但你仍要跟随，不牵引。',
     '',
     '【你的状态】',
-    '- 你不确定用户是否需要建议',
-    '- 用户可能只是需要被理解，不需要解决方案',
-    '- 真正的行动意愿来自用户，不是你',
+    '- 用户的内在动机可能正在浮现。',
+    '- 你可能有想法，但这些想法必须交给用户检验。',
+    '- 你的角色是"助产士"，不是"建筑师"。',
     '',
-    '【你要做】',
-    '1. 先问："你希望接下来怎么处理？"',
-    '2. 如果用户也不知道，可以轻声分享一个视角',
-    '3. 如果是情绪问题，帮助重新理解比给行动更重要',
-    '4. 如果是现实问题，帮用户看见微小的一步',
+    '【核心技术：动机式提问】',
+    '1. 探索改变的重要性：',
+    '   - "对你来说，改变这件事有多重要？为什么？"',
+    '   - "如果你什么都不做，继续这样下去，你猜半年后你的感觉会是什么？"',
+    '2. 探索信心：',
+    '   - "从1到10，你有多少信心迈出第一步？为什么是这个数字而不是更低？"',
+    '3. 探索具体行动（只在准备阶段使用）：',
+    '   - "如果今天你有一个神奇的魔法，能让你迈出一小步，那可能会是什么？"',
+    '   - "过去有没有类似的情况，你成功处理过？那次你是怎么办到的？"',
     '',
-    '【重要】',
-    '- 不要让用户觉得你在"布置作业"',
-    '- 不要用"你应该" "你需要" "建议你"',
-    '- 如果用户不想进入行动，退回探索模式是完全可以的',
-    '- 很多高质量对话根本不需要行动建议',
+    '【聚焦解决技术（仅在准备/行动阶段可用）】',
+    '1. 奇迹问句：',
+    '   - "假设今晚睡觉时，一个奇迹发生，你的这个问题解决了。但因为你睡着了，你不知道它发生了。明天醒来，你最先注意到的什么变化会让你意识到奇迹发生了？"',
+    '2. 量尺问句：',
+    '   - "如果0分是你最糟糕的时候，10分是问题完全解决，你现在在几分？你希望到几分？从现在的分数再高1分，会有什么不同？"',
+    '3. 应对问句：',
+    '   - "你目前的状况这么难，你是怎么撑下来的？这让我看到你身上有股什么力量？"',
+    '',
+    '【重要约束】',
+    '- 只问，不替用户回答。',
+    '- 当用户犹豫时，撤回并说："不着急，我们只是聊聊可能性。"',
+    '- 如果用户说"我不知道"，反映："不确定也是正常的，也许还没到时候。"',
+    '- 行动方案必须是用户自己说出的。你可以帮忙梳理，但不能添加新点子。',
+    '- 如果用户想出的行动非常小（比如"明天我试着早睡半小时"），这就是成功。庆祝它："这听起来是很重要的一步。"',
+    '',
+    '【"是，但是…"的处理】',
+    '如果用户说"是的，但…"，那是在表达矛盾。不要反驳，不要说服。',
+    '立即停止推进，用双层反映回应：',
+    '  1. 承认用户想要改变的部分："我看到你确实希望改善现状。"',
+    '  2. 承认用户的保留："同时，你也清楚其中有很多现实的困难。"',
+    '  3. 然后轻声邀请："如果这些困难都不是问题，那你第一步最想做的是什么？"',
+    '这会让用户感到被理解，从而减少对抗。',
+    '',
+    '【当用户报告行动失败或退步】',
+    '- 先接纳情绪："这让你感到挫败，甚至怀疑自己。"',
+    '- 正常化："改变本来就不是线性的。大多数人都会走两步退一步。"',
+    '- 寻找学习："这次尝试虽然没有达到预期，但它让你更清楚什么可能行不通。这本身就是收获。"',
+    '- 重新确认动机："经历了这次，你想继续调整，还是想先停一停？"',
+    '永远不要用"你不够努力"之类的暗示。',
     '',
     '【退出条件】',
-    '如果用户情绪再次波动，退回 emotion_intake。对话不是线性推进的。'
+    '如果用户感到压力，立刻退回 source_exploration 或 emotion_intake。',
+    '对话不是线性推进的。'
   ].join('\n')
 };
 
 // 信息完整度维度
-const INFO_DIMENSIONS = ['event', 'emotion', 'reason', 'goal', 'constraints'];
+const INFO_DIMENSIONS = ['event', 'emotion', 'deep_feeling', 'meaning', 'value_conflict', 'unfulfilled_need', 'self_concept', 'goal', 'constraints', 'action_readiness', 'action_obstacles'];
 const INFO_LABELS = {
-  event: '发生了什么',
-  emotion: '用户感受',
-  reason: '为什么会刺痛',
-  goal: '用户想解决什么',
-  constraints: '现实限制'
+  event: '具体事件/情境',
+  emotion: '表层的情绪感受',
+  deep_feeling: '更深层、更核心的感受（如无助、羞耻、孤独）',
+  meaning: '这件事对用户的意义（"这对我意味着…"）',
+  value_conflict: '价值观冲突或价值条件（"应该"但内心却…）',
+  unfulfilled_need: '未满足的心理需求（被认可、被尊重、安全感、自主等）',
+  self_concept: '用户如何看待自己（自我形象与理想我的差距）',
+  goal: '用户期望的结果',
+  constraints: '现实的限制',
+  action_readiness: '行动准备度（前意向/意向/准备/行动中）',
+  action_obstacles: '用户感知到的行动障碍'
 };
 
 // 判断是否是"新话题"或"情绪刚爆发"（触发 slow mode 的信号词）
@@ -265,6 +385,123 @@ const SLOW_MODE_TRIGGERS = [
 function detectSlowMode(message = '') {
   const text = String(message || '').toLowerCase();
   return SLOW_MODE_TRIGGERS.some(word => text.includes(word));
+}
+
+// ============================================================
+// 新话题/新会话检测
+// ============================================================
+
+// 时间阈值（毫秒）：超过此时间间隔即视为可能新会话
+const SESSION_GAP_THRESHOLD_MS = 6 * 60 * 60 * 1000; // 6 小时
+
+// 相似度阈值：低于此值视为新话题
+const TOPIC_SIMILARITY_THRESHOLD = 0.15;
+
+/**
+ * 计算两条中文文本的相似度（基于字符二元组重叠率）
+ */
+function calculateTextSimilarity(textA, textB) {
+  if (!textA || !textB) return 0;
+  const a = String(textA).toLowerCase().replace(/[\s.,!?;:，。！？；：、]/g, '');
+  const b = String(textB).toLowerCase().replace(/[\s.,!?;:，。！？；：、]/g, '');
+  if (!a || !b) return 0;
+
+  // 提取字符二元组
+  const bigramsA = new Set();
+  const bigramsB = new Set();
+  for (let i = 0; i < a.length - 1; i++) bigramsA.add(a.slice(i, i + 2));
+  for (let i = 0; i < b.length - 1; i++) bigramsB.add(b.slice(i, i + 2));
+
+  if (bigramsA.size === 0 || bigramsB.size === 0) return 0;
+
+  let intersection = 0;
+  for (const bigram of bigramsA) {
+    if (bigramsB.has(bigram)) intersection++;
+  }
+
+  return intersection / Math.max(bigramsA.size, bigramsB.size);
+}
+
+/**
+ * 判断是否需要重置会话状态（新话题检测）
+ * @param {Object} session - 当前会话状态
+ * @param {string} newMessage - 用户新消息
+ * @param {string} lastUserMessage - 上一条用户消息
+ * @returns {{ shouldReset: boolean, reason: string }}
+ */
+function shouldResetSession(session, newMessage, lastUserMessage) {
+  const now = Date.now();
+  const lastActivity = new Date(session.last_activity_at || session.started_at || now).getTime();
+  const gapHours = (now - lastActivity) / (1000 * 60 * 60);
+
+  // 条件1：长时间未活动（超过6小时）
+  if (gapHours >= 6) {
+    return { shouldReset: true, reason: `会话间隔超过 ${gapHours.toFixed(1)} 小时` };
+  }
+
+  const msgLower = String(newMessage || '').toLowerCase();
+
+  // 条件2：用户明确表达想换话题
+  const resetPhrases = [
+    '换个话题', '不说这个了', '新的问题', '另一件事', '聊点别的',
+    '别提了', '不想说这个', '不谈这个', '换个问题', '新问题',
+    '我有新的困惑', '最近遇到一件事', '刚发生一件事'
+  ];
+  if (resetPhrases.some(phrase => msgLower.includes(phrase))) {
+    return { shouldReset: true, reason: '用户表达了切换话题的意愿' };
+  }
+
+  // 条件3：与上一次用户消息内容差异极大（新事件），且session已有一定深度
+  const sessionIsDeep = session.state !== 'emotion_intake' || (session.turns_in_state || 0) > 3;
+  if (sessionIsDeep && lastUserMessage && newMessage) {
+    const similarity = calculateTextSimilarity(lastUserMessage, newMessage);
+    if (similarity < TOPIC_SIMILARITY_THRESHOLD) {
+      return { shouldReset: true, reason: `话题相似度仅 ${similarity.toFixed(2)}，可能为新话题` };
+    }
+  }
+
+  // 条件4：用户的消息带有强烈的"初始倾诉"特征，而session已处于较深阶段
+  const initialDisclosurePatterns = [
+    '我今天', '我最近', '刚发生', '刚才', '突然', '崩溃了', '受不了',
+    '好难过', '好焦虑', '好生气'
+  ];
+  if (session.state !== 'emotion_intake' &&
+      initialDisclosurePatterns.some(p => msgLower.includes(p))) {
+    return { shouldReset: true, reason: '用户似乎开始倾诉新的事件，状态需重置' };
+  }
+
+  return { shouldReset: false, reason: '' };
+}
+
+/**
+ * 保留长期记忆，重置对话状态到初始情绪接收阶段
+ * @param {Object} session - 原 session
+ * @returns {Object} 新 session
+ */
+function resetSessionForNewTopic(session) {
+  return {
+    ...session,
+    state: DIALOGUE_STATES.EMOTION_INTAKE,
+    previous_state: null,
+    turns_in_state: 0,
+    understanding_score: 0,
+    info_completeness: {},
+    core_need: null,
+    topic: null,
+    slow_mode: false,
+    check_count: 0,
+    meaningful_exchanges: 0,
+    action_readiness: null,
+    action_obstacles: null,
+    problem_type: null,
+    core_need_drift: false,
+    // 保留长期洞察和成长记录
+    insights: session.insights || [],
+    core_need_history: session.core_need_history || [],
+    // 新增字段记录旧话题，供开场白参考
+    previous_topic_summary: session.topic || session.core_need || '之前的对话',
+    last_activity_at: new Date().toISOString()
+  };
 }
 
 // 判断是否需要更严格的理解确认
@@ -293,6 +530,7 @@ function createInitialSessionState({ style = 'Companion', mbtiType = '' } = {}) 
     mbti_type: mbtiType,
     core_need: null,
     core_need_history: [],
+    meaningful_exchanges: 0,
     understanding_score: 0,
     info_completeness: {
       event: 0,
@@ -305,16 +543,29 @@ function createInitialSessionState({ style = 'Companion', mbtiType = '' } = {}) 
     insights: [],
     slow_mode: false,
     check_count: 0,
+    action_readiness: null,
+    action_obstacles: null,
+    problem_type: null,
     started_at: new Date().toISOString(),
-    last_activity_at: new Date().toISOString()
+    last_activity_at: new Date().toISOString(),
+    last_user_message: null,
+    previous_topic_summary: null,
+    needs_opening: false
   };
 }
 
-// 理解程度描述文本（v2：阈值提升，表述更硬）
+// 理解程度描述文本（v3：罗杰斯维度判定）
 function buildUnderstandingDescription(session) {
   const score = session.understanding_score || 0;
   const completeness = session.info_completeness || {};
   const slowMode = session.slow_mode || false;
+
+  // 罗杰斯式充分了解判定：7个核心维度中至少5个>=0.6，且包含 deep_feeling 和 unfulfilled_need
+  const rogersDimensions = ['event', 'emotion', 'deep_feeling', 'meaning', 'value_conflict', 'unfulfilled_need', 'self_concept'];
+  const aboveThreshold = rogersDimensions.filter(d => (completeness[d] || 0) >= 0.6);
+  const deepFeelingOk = (completeness.deep_feeling || 0) >= 0.6;
+  const unfulfilledNeedOk = (completeness.unfulfilled_need || 0) >= 0.6;
+  const sufficientlyUnderstood = aboveThreshold.length >= 5 && deepFeelingOk && unfulfilledNeedOk;
 
   const lines = [
     `当前理解程度：${Math.round(score * 100)}%`,
@@ -331,18 +582,27 @@ function buildUnderstandingDescription(session) {
     lines.push('⚠ 慢对话模式激活：用户可能情绪刚爆发或话题较新。回复要更短、更轻、更慢。一次只推进一点。');
   }
 
-  if (score < 0.4) {
+  if (!sufficientlyUnderstood) {
     lines.push('');
-    lines.push('⚠ 理解程度严重不足。你必须只做两件事：共情 + 提问。禁止任何形式的分析、解释、建议、总结。');
-  } else if (score < 0.6) {
-    lines.push('');
-    lines.push('⚠ 理解程度不足。你可以继续探索，也可以轻声确认理解是否正确。仍然禁止分析模式、心理概念、行动建议。');
+    lines.push('⚠ 理解程度不足，必须继续使用反映倾听和探索性问题，绝对不可以进入建议模式。');
   } else if (score < 0.8) {
     lines.push('');
     lines.push('注意：有一定理解，但不要自满。你的理解可能仍然是错的。如需推进，先确认用户是否愿意深入。');
   } else {
     lines.push('');
     lines.push('注意：理解程度较好。即便如此，推进前也要先确认用户当前的状态和意愿。');
+  }
+
+  // 行动准备度限制
+  const readiness = session.action_readiness;
+  if (readiness === 'precontemplation' || readiness === 'contemplation') {
+    lines.push('');
+    lines.push('⚠ 行动引导限制：用户处于行为改变的早期阶段（前意向/意向）。');
+    lines.push('此时任何直接的建议、练习、任务都可能引发抗拒。');
+    lines.push('请专注于反映矛盾、澄清价值观，让用户自己走向"想要改变"的决定。');
+  } else if (readiness === 'preparation' || readiness === 'action') {
+    lines.push('');
+    lines.push('用户已表达行动意愿，你可以提供温和的引导，但始终以提问形式让用户自己生成方案。');
   }
 
   return lines.join('\n');
@@ -353,11 +613,38 @@ function buildCoreNeedDescription(session) {
   if (!session.core_need) {
     return '尚未识别核心需求。不要强行归纳。让对话自然展开，核心需求会慢慢浮现。';
   }
-  return [
+  const lines = [
     `你目前认为的核心需求：${session.core_need}`,
     '注意：这只是你的假设，不是事实。随时准备被用户纠正。',
-    '围绕这个方向探索，但如果用户转向了，跟着用户走。'
-  ].join('\n');
+    '这个需求可能是一种心理缺失（如"渴望被认可"、"害怕被抛弃"）。',
+    '所有回复围绕这个核心需求推进，不被表面话题带跑。',
+    '',
+    '当用户跳跃到其他话题时，先跟随一小段，然后温和地引回：',
+    '"我们刚才在聊你感到不被领导重视，你现在提到和室友的矛盾，这两者之间是不是有某种联系？"',
+    '',
+    '如果用户明确表示不想继续原话题，尊重转向，但重新确认核心需求。'
+  ];
+
+  // 如果检测到 core_need_drift，追加漂移提醒
+  if (session.core_need_drift) {
+    lines.push('');
+    lines.push('⚠ 用户刚才似乎转移了话题，也许在回避某个点。如果合适，可以轻声提问：');
+    lines.push('"我们刚聊到你感到被误解，现在你讲到工作压力，你感觉这两件事有关联吗？"');
+  }
+
+  // 现实决策/问题型诉求
+  if (session.problem_type === 'practical_dilemma') {
+    lines.push('');
+    lines.push('用户的核心需求是一个现实决策或问题。');
+    lines.push('你的任务是帮助用户澄清他看重的价值，而不是替他权衡利弊。');
+    lines.push('可以提问：');
+    lines.push('  - "在做这个决定时，你最怕失去的是什么？"');
+    lines.push('  - "如果没有任何人或事约束你，你内心更偏向哪个选择？为什么？"');
+    lines.push('  - "一年后的你，会怎么看待今天的选择？"');
+    lines.push('不要给出建议，不要列出利弊清单。');
+  }
+
+  return lines.join('\n');
 }
 
 // 慢模式额外指令
@@ -366,11 +653,11 @@ function buildSlowModeInstruction() {
     '=== 慢对话模式激活 ===',
     '请严格遵守以下规则：',
     '1. 回复不超过 80 字',
-    '2. 一轮只说一件事，只问一个问题',
+    '2. 本轮必须包含：一句共情反映 + 一个极轻的开放邀请（如"你愿意说说吗？"）',
     '3. 不做任何分析或总结',
     '4. 语气更轻、更慢、留出空间',
-    '5. 如果用户表达混乱，可以说："不急，慢慢说"',
-    '6. 不要解释用户，只需要陪伴和跟随'
+    '5. 如果用户表达混乱，可以说："不急，慢慢说" ，但说完后仍需邀请继续表达。',
+    '6. 不要解释用户，只需要陪伴和跟随，同时确保用户知道你可以听下去。'
   ].join('\n');
 }
 
@@ -419,6 +706,17 @@ function buildDialogueSystemPrompt({
     `八维认知功能排序：${stackText}`,
     `沟通偏好：${communicationStyle || 'Companion'}`,
     '',
+    sessionState.needs_opening ? [
+      '=== 新对话开始 ===',
+      '用户刚刚开启了一段全新的对话。',
+      '虽然你保留着对用户性格的长期理解，但请完全忘记刚才的对话话题。',
+      '用简短、温暖的方式重新开启对话，可以提及：',
+      '  - 一种"好久不见，最近如何"的自然问候。',
+      '  - 如果用户带来了新事件，可以说"听起来你遇到了新的事情，愿意跟我聊聊吗？"',
+      '  - 绝对不要主动提起上一个话题，除非用户自己提到。',
+      '开场白不超过3句话，语气轻松、开放。',
+      ''
+    ].join('\n') : '',
     '=== 当前对话阶段 ===',
     STATE_INSTRUCTIONS[sessionState.state] || STATE_INSTRUCTIONS.emotion_intake,
     '',
@@ -452,6 +750,9 @@ function buildDialogueSystemPrompt({
     parts.push('');
   }
 
+  parts.push(REFLECTIVE_LISTENING_RULES);
+  parts.push('');
+
   parts.push('=== 回答规范 ===');
   parts.push('字数限制：情绪接收/来源探索阶段 30-80 字，模式觉察/行动整合阶段 80-200 字。');
   parts.push('一句话能说完的事，不要说三句。');
@@ -459,6 +760,24 @@ function buildDialogueSystemPrompt({
   parts.push('不要让用户感觉在被流程化。对话要自然。');
   parts.push('不要使用未闭合的 markdown 粗体、编号或列表；不要在句子中途结束。');
   parts.push('完整比详细更重要；如果空间不够，宁可少说，也必须自然结束。');
+
+  parts.push('');
+  parts.push('=== 对话范本（供你感受节奏和深度） ===');
+  parts.push('用户："我不知道该说什么...好像也没什么问题，就是...空。"');
+  parts.push('AI："听起来你感到一种空虚感，但很难描述。你愿意多说说这种空的感觉吗？"');
+  parts.push('用户："对，就是...每天好像在演戏。"');
+  parts.push('AI："\'演戏\'...你感到自己不真实？"');
+  parts.push('用户："是的...我不知道哪个是真的我。"');
+  parts.push('AI："这种不确定让你感到很迷失。和我多说一点这种感觉，好吗？"');
+  parts.push('---');
+  parts.push('用户："我妈说我应该找稳定工作，不要做设计。"');
+  parts.push('AI："你用了\'应该\'这个词。我听到你内心有一个声音在说这是错的。但你自己真正的感受是什么？"');
+  parts.push('用户："我很生气！但我不应该生气，她是我妈。"');
+  parts.push('AI："你感到愤怒，但同时有个声音说\'你不应该愤怒\'。好像愤怒对你来说是一种不被允许的感受。你是什么时候开始有这种感觉的？"');
+  parts.push('用户："对...我从小就不能生气。"');
+  parts.push('AI："在这里，你可以感到愤怒，这是很自然的。你愿意继续说说这种感觉吗？"');
+  parts.push('---');
+  parts.push('这个范本展示了：不分析、不打断、不抢话，只是跟随、反映、接纳，直到用户自己说出真相。');
 
   return parts.join('\n');
 }
@@ -492,6 +811,19 @@ function buildStateAnalysisPrompt({
           '- topic: 对话主题，简洁名词短语。如果尚未明确则为null。',
           '- key_insight: 这次对话中揭示的关于用户的新信息（如有），否则为null。注意：AI的分析不是洞察，用户自己说出来的才是。',
           '- slow_mode: boolean。如果用户情绪刚爆发、表达混乱、或第一次提到该话题，设为true。',
+          '- user_self_awareness: boolean, 用户自己是否说出了新的觉察或模式？',
+          '- value_condition_words: string[], 用户话语中包含的"应该、必须、不能"等词汇',
+          '- user_engagement_depth: 0-1, 用户对本轮对话的投入程度（依据：字数、情绪表露、自我暴露深度）',
+          '- core_need_drift: boolean, 用户是否偏离了核心需求？',
+          '- action_readiness: string, 值必须是 "precontemplation"（前意向）、"contemplation"（意向）、"preparation"（准备）、"action"（行动中）之一。',
+          '  判断依据：',
+          '  - 前意向：用户在抱怨外部因素，不认为自己需要改变。',
+          '  - 意向：用户表达了改变的愿望，但也提到了困难，显得矛盾。',
+          '  - 准备：用户开始设想具体的行动，询问细节。',
+          '  - 行动：用户已经在尝试，并报告结果。',
+          '- action_obstacles: string[], 用户提到的具体障碍（如"我没时间"、"我怕失败"、"我不知道怎么做"）',
+          '- problem_type: string, 可选值 "emotional_distress"（纯情绪困扰）、"practical_dilemma"（现实两难/决策）、"mixed"（混合型）。',
+          '  如果是 practical_dilemma，AI 需要更多帮助用户厘清价值观和选项，而不是消除情绪。',
           '',
           '重要原则：',
           '1. 宁可低估理解程度，不要高估。',
@@ -597,10 +929,47 @@ function applyStateAnalysis(session, analysis) {
   // slow_mode
   if (typeof analysis.slow_mode === 'boolean') {
     updated.slow_mode = analysis.slow_mode;
-  } else {
-    // 如果用户输入触发了 slow mode 信号，激活它
-    // 注意：这里需要用户消息内容，但我们没有传进来
-    // 由 server.js 在调用时处理
+  }
+
+  // --- 有意义交流计数（v3） ---
+  let meaningfulIncrement = 0;
+
+  // 用户自己说出了新的觉察或模式
+  if (analysis.user_self_awareness === true) {
+    meaningfulIncrement += 1;
+  }
+
+  // 用户投入程度较高（字数、情绪表露、自我暴露深度）
+  if (typeof analysis.user_engagement_depth === 'number' && analysis.user_engagement_depth > 0.5) {
+    meaningfulIncrement += 1;
+  }
+
+  if (meaningfulIncrement > 0) {
+    updated.meaningful_exchanges = (session.meaningful_exchanges || 0) + meaningfulIncrement;
+  }
+
+  // 核心需求漂移标记
+  if (analysis.core_need_drift === true) {
+    updated.core_need_drift = true;
+  } else if (typeof analysis.core_need_drift === 'boolean') {
+    updated.core_need_drift = false;
+  }
+
+  // 行动准备度
+  const validReadiness = ['precontemplation', 'contemplation', 'preparation', 'action'];
+  if (analysis.action_readiness && validReadiness.includes(analysis.action_readiness)) {
+    updated.action_readiness = analysis.action_readiness;
+  }
+
+  // 行动障碍
+  if (Array.isArray(analysis.action_obstacles)) {
+    updated.action_obstacles = analysis.action_obstacles;
+  }
+
+  // 问题类型
+  const validProblemTypes = ['emotional_distress', 'practical_dilemma', 'mixed'];
+  if (analysis.problem_type && validProblemTypes.includes(analysis.problem_type)) {
+    updated.problem_type = analysis.problem_type;
   }
 
   updated.turns_in_state = (session.turns_in_state || 0) + 1;
@@ -612,25 +981,27 @@ function applyStateAnalysis(session, analysis) {
 }
 
 // ============================================================
-// 成长摘要（v2：阈值大幅提高，不轻易生成）
+// 成长摘要（v3：有意义交流 + 罗杰斯维度判定）
 // ============================================================
 const GROWTH_SUMMARY_THRESHOLD = {
-  minTurns: 10,
-  minUnderstandingScore: 0.65,
-  requiredDimensions: ['event', 'emotion', 'reason']
+  minMeaningfulExchanges: 5,
+  minUnderstandingScore: 0.7,
+  requiredDimensions: ['event', 'emotion', 'deep_feeling', 'unfulfilled_need']
 };
 
 function shouldGenerateGrowthSummary(session) {
-  if ((session.total_turns || 0) < GROWTH_SUMMARY_THRESHOLD.minTurns) return false;
+  if ((session.meaningful_exchanges || 0) < GROWTH_SUMMARY_THRESHOLD.minMeaningfulExchanges) return false;
   if ((session.understanding_score || 0) < GROWTH_SUMMARY_THRESHOLD.minUnderstandingScore) return false;
 
   const completeness = session.info_completeness || {};
   for (const dim of GROWTH_SUMMARY_THRESHOLD.requiredDimensions) {
-    if (!completeness[dim] || completeness[dim] < 0.4) return false;
+    if (!completeness[dim] || completeness[dim] < 0.5) return false;
   }
 
+  // 只有在模式觉察或行动整合阶段才允许生成成长摘要
+  if (session.state !== DIALOGUE_STATES.PATTERN_REFLECTION && session.state !== DIALOGUE_STATES.ACTION_INTEGRATION) return false;
+
   if (Array.isArray(session.insights) && session.insights.length > 0) return true;
-  if (session.state === DIALOGUE_STATES.ACTION_INTEGRATION && (session.total_turns || 0) >= 12) return true;
 
   return false;
 }
@@ -655,9 +1026,12 @@ function buildGrowthSummaryPrompt(session, recentMessages) {
           '  "emotion": "核心情绪",',
           '  "core_conflict": "核心冲突",',
           '  "user_pattern": "用户的行为或认知模式（必须是用户自己呈现的，不是AI分析的）",',
-          '  "growth": "本次的觉察或成长（必须是用户自己说出的，或是明确的转折）"',
+          '  "growth": "本次的觉察或成长（必须是用户自己说出的，或是明确的转折）",',
+          '  "action_step": "用户自己提出的行动尝试（如有，否则为null）",',
+          '  "action_outcome": "用户报告的结果（如有，否则为null）"',
           '}',
           '重要：如果用户没有自己说出任何觉察或成长，growth 字段设为 "本次对话主要在探索阶段，尚未形成明确的成长觉察"。',
+          '只记录用户自己说出的行动，不记录 AI 的建议。',
           '不做诊断，不做评价，只记录观察到的事实。'
         ].join('\n')
       },
@@ -743,5 +1117,8 @@ module.exports = {
   parseGrowthSummary,
   buildOpeningPrompt,
   buildSlowModeInstruction,
-  buildCheckUnderstandingInstruction
+  buildCheckUnderstandingInstruction,
+  shouldResetSession,
+  resetSessionForNewTopic,
+  calculateTextSimilarity
 };
