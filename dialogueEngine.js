@@ -709,6 +709,214 @@ function isInEmotionalLoop(sessionState) {
   return state === USER_STATES.EMOTIONAL_LOOP_UNAWARE || state === USER_STATES.EMOTIONAL_LOOP_AWARE;
 }
 
+// ============================================================
+// 推理路径路由（决定本次回复的主要推理方向）
+// ============================================================
+const REASONING_PATHS = {
+  EMOTIONAL: 'emotional',
+  REALITY: 'reality',
+  COGNITIVE: 'cognitive',
+  ACTION: 'action',
+  MIXED: 'mixed'
+};
+
+const REASONING_PATH_LABELS = {
+  emotional: '情绪路径：理解、接住、反映用户情绪',
+  reality: '现实路径：分析现实结构、外部系统、客观限制',
+  cognitive: '认知路径：觉察用户的解释模式，拓展认知框架',
+  action: '行动路径：帮助恢复主体性，找到现实支点',
+  mixed: '混合路径：兼顾多条推理方向'
+};
+
+/**
+ * 动态路由：根据用户消息和 session 上下文判断本次回复的主要推理方向
+ * @param {string} message - 用户当前消息
+ * @param {Object} sessionState - 当前 session 状态
+ * @returns {string} 推理路径标识
+ */
+function routeReasoningPath(message = '', sessionState = {}) {
+  const text = String(message || '').toLowerCase().trim();
+  if (!text) return REASONING_PATHS.EMOTIONAL;
+
+  const completeness = sessionState.info_completeness || {};
+  const hasEventContext = (completeness.event || 0) >= 0.3;
+  const userState = sessionState.user_state || '';
+
+  // Reality path: 用户问"为什么"类问题或需要理解外部系统
+  const realitySignals = [
+    '为什么', '怎么回事', '什么情况', '凭什么', '怎么这样', '搞不懂',
+    '招聘', '公司', '行业', '市场', '体制', '规则', '流程', '政策',
+    'HR', '面试', '简历', '筛选', '竞争', '机会'
+  ];
+  const hasRealitySignals = realitySignals.some(s => text.includes(s));
+
+  // Cognitive path: 绝对化语言或明显的认知扭曲
+  const cognitiveSignals = ['每次', '总是', '从来', '所有人', '没有人', '永远', '根本', '从不'];
+  const hasCognitiveSignals = cognitiveSignals.some(s => text.includes(s));
+
+  // Action path: 明确问"怎么办"
+  const actionSignals = ['怎么办', '怎么打破', '怎么改变', '如何', '有什么办法', '该怎么做',
+    '走不出', '出不来', '怎么处理', '怎么应对', '怎么改善', '下一步'];
+  const hasActionSignals = actionSignals.some(s => text.includes(s));
+
+  // Emotional path signals: 纯情绪表达
+  const emotionalSignals = ['好累', '好难过', '好崩溃', '好烦', '很累', '累了', '难受', '好焦虑',
+    '好痛苦', '不开心', '低落', 'emo', '好压抑'];
+  const hasEmotionalSignals = emotionalSignals.some(s => text.includes(s));
+
+  // 优先判断
+  if (hasActionSignals) {
+    // 如果用户已经在情绪循环中且有行动信号 → MIXED
+    if (userState === USER_STATES.EMOTIONAL_LOOP_AWARE) {
+      return REASONING_PATHS.MIXED;
+    }
+    return REASONING_PATHS.ACTION;
+  }
+
+  if (hasRealitySignals && hasEventContext && !hasEmotionalSignals) {
+    return REASONING_PATHS.REALITY;
+  }
+
+  if (hasCognitiveSignals && hasEventContext) {
+    return REASONING_PATHS.COGNITIVE;
+  }
+
+  // 根据 user_state 推断
+  if (userState === USER_STATES.REALITY_NEEDS) return REASONING_PATHS.REALITY;
+  if (userState === USER_STATES.COGNITIVE_PATTERN) return REASONING_PATHS.COGNITIVE;
+  if (userState === USER_STATES.ACTION_STUCK) return REASONING_PATHS.ACTION;
+  if (userState === USER_STATES.EMOTIONAL_LOOP_AWARE) {
+    // 有认知但情绪沉重 → 混合
+    return REASONING_PATHS.MIXED;
+  }
+
+  // 默认：基于对话阶段
+  const dialogueState = sessionState.state || 'emotion_intake';
+  if (dialogueState === 'action_integration') return REASONING_PATHS.ACTION;
+
+  return REASONING_PATHS.EMOTIONAL;
+}
+
+// ============================================================
+// 推理路径指令（决定 AI 在不同推理方向上的行为）
+// ============================================================
+
+const REALITY_PATH_INSTRUCTIONS = [
+  '=== 现实路径指令（当前推理方向：理解现实） ===',
+  '',
+  '你的任务是帮助用户理解事件在现实中是怎么运作的。',
+  '',
+  '【核心分析框架】',
+  '当用户遇到现实困惑时，AI 应从以下维度分析：',
+  '',
+  '1. 系统与机制：这个事件背后的系统是如何运作的？',
+  '   - 例如"HR 为什么不回我"→ 招聘是黑箱系统：JD 关键词筛选、岗位可能已关闭、HR 同时处理数百份简历、',
+  '     时间窗口、内部流程优先级、行业淡旺季等。',
+  '   - 通用问题：这事在现实中通常由哪些因素决定？哪些是用户无法知道的？',
+  '',
+  '2. 信息缺失：用户是否因为信息不足而做出了错误的推断？',
+  '   - 用户知道的 vs 用户不知道的',
+  '   - 哪些事是用户无法确认的（对方真实想法、内部决策流程等）',
+  '',
+  '3. 区分归因：帮助用户区分——哪些是自己的问题，哪些是系统问题。',
+  '   - "HR 不回复"≠"我很差"。可能是岗位冻结/竞争激烈/关键词未命中/HR 太忙。',
+  '   - "领导问我"≠"我不行"。可能是例行跟进/了解进度/为会议做准备。',
+  '',
+  '4. 他人行为逻辑：对方可能的动机和限制是什么？',
+  '   - HR 的 KPI 是招到合适的人，不是让你难受',
+  '   - 领导的目的是项目推进，不是挑你的错',
+  '',
+  '【关键句式】',
+  '- "这件事情在现实中通常是这样运作的…"',
+  '- "你有没有想过，对方那边可能是怎么想的？"',
+  '- "除了\'我做错了\'，这件事还有没有其他可能的解释？"',
+  '- "你确定这个结果 = 你的能力，还是说中间还有其他因素？"',
+  '',
+  '【绝对禁止】',
+  '- 跳过现实分析直接进入情绪探索',
+  '- 用心理学机制解释现实问题（"你被忽视是因为你害怕被否定的投射"）',
+  '- 在不确定时说"一定是这样"，保持可能性思维',
+  '',
+  '目标：帮助用户建立更完整、更客观的现实画面，从中释放自己。'
+].join('\n');
+
+const COGNITIVE_PATH_INSTRUCTIONS = [
+  '=== 认知路径指令（当前推理方向：觉察解释模式） ===',
+  '',
+  '你的任务是帮助用户看见自己是如何解释世界的。',
+  '',
+  '【核心方法】',
+  '1. 区分事实与解释：',
+  '   - 事实：领导在会议上问"需求跟进得怎么样了"',
+  '   - 用户的解释："完了，我肯定有什么没做好"',
+  '   - AI 的工作：帮用户看见这个解释，而不是认可它',
+  '',
+  '2. 识别自动思维模式：',
+  '   - 用户习惯性地把事件解释成什么？（对自我价值的否定？对他人的迎合？对控制的追求？）',
+  '   - 这个解释模式来自哪里？（过去的经历？家庭环境？）',
+  '   - 提示：不要替用户诊断，用温和提问让他自己看见',
+  '',
+  '3. 提供替代框架：',
+  '   - "如果换一个人遇到同样的事，他会怎么理解？"',
+  '   - "一年后的你会怎么看待今天这件事？"',
+  '   - "你最好的朋友遇到同样的情况，你会怎么对他说？"',
+  '',
+  '4. 用认知功能理解感知方式（不是贴标签）：',
+  '   - Ne 型用户：容易联想到"可能发生的各种坏结果"——帮 ta 区分可能性与必然性',
+  '   - Fe 型用户：容易把外界反馈等同于关系质量——帮 ta 区分事实反馈与关系攻击',
+  '   - Fi 型用户：容易感受价值冲突——帮 ta 清晰自己的价值观',
+  '   - Ti 型用户：容易陷入内部逻辑闭环——帮 ta 引入外部输入',
+  '',
+  '【关键句式】',
+  '- "我注意到你刚才把[事件]直接理解成了[解释]。这两者之间是有距离的。"',
+  '- "你的第一反应是这个，对吗？我们一起看看这个反应是怎么来的。"',
+  '- "如果只谈你知道的事实，不加入你的解释，事情是什么样子的？"',
+  '',
+  '【绝对禁止】',
+  '- 贴标签（"你这是灾难化思维"、"你是焦虑型依恋"）',
+  '- 替用户解读（"你真正害怕的是…"）',
+  '- 在事实不清时做认知重构',
+  '',
+  '目标：让用户自己看见"我是如何解释世界的"，从而获得选择新解释的能力。'
+].join('\n');
+
+const ACTION_PATH_INSTRUCTIONS = [
+  '=== 行动路径指令（当前推理方向：恢复行动力） ===',
+  '',
+  '你的任务是帮助用户找到现实支点，恢复主体性和行动感。',
+  '',
+  '【核心方法】',
+  '1. 先区分可控与不可控：',
+  '   - "这件事中，哪些是你完全控制不了的？哪些是你多少可以影响的？"',
+  '   - 让用户停止为不可控的事情消耗能量',
+  '',
+  '2. 找到最小支点：',
+  '   - "现在最让你卡住的最小的一件事是什么？"',
+  '   - "如果只能做一件事让局面好一点点，那会是什么？"',
+  '   - 行动不需要大，需要真实可控',
+  '',
+  '3. 恢复主体性：',
+  '   - "在现在这个情况下，你能控制的最小的一件事是什么？"',
+  '   - "过去遇到类似情况，你是怎么处理的？那次什么方法有用？"',
+  '',
+  '4. 将大问题拆解为小步骤：',
+  '   - "我们先不看去哪里，先看第一步。"',
+  '   - "你觉得从你现在的位置，走一小步能往哪个方向？"',
+  '',
+  '【关键句式】',
+  '- "我们先把\'怎么办\'放一放，先搞清楚你现在的位置在哪里。"',
+  '- "这件事中哪部分是你完全可以决定的？"',
+  '- "如果明天你能做一件小事让自己感觉好一点点，那会是什么？"',
+  '',
+  '【绝对禁止】',
+  '- 用户还没准备好就推行动',
+  '- 给出标准答案或"你应该"句式',
+  '- 忽视情绪直接进入行动计划',
+  '- 让用户感觉"不做就是不够努力"',
+  '',
+  '目标：帮助用户从"被困住"到"有一个可操作的下一步"。'
+].join('\n');
+
 // 判断是否是"新话题"或"情绪刚爆发"（触发 slow mode 的信号词）
 const SLOW_MODE_TRIGGERS = [
   '第一次', '从未', '从来没', '首', '刚发生', '刚刚',
@@ -861,6 +1069,7 @@ function createInitialSessionState({ style = 'Companion', mbtiType = '' } = {}) 
     turns_in_state: 0,
     total_turns: 0,
     user_state: null,
+    reasoning_path: null,
     style,
     style_key: styleKey,
     mbti_type: mbtiType,
@@ -1033,15 +1242,27 @@ function buildDialogueSystemPrompt({
     ? routeUserState(userMessage, sessionState)
     : (sessionState.user_state || USER_STATES.EMOTIONAL_OPENING);
 
+  // 推理路径路由：决定本次回复的主要推理方向
+  const currentReasoningPath = sessionState.reasoning_path || routeReasoningPath(userMessage || '', sessionState);
+
   const parts = [
     '你是 EchoMind 的 AI 成长伙伴，用中文回复。',
     '',
     '=== 你的核心目标 ===',
-    '不是"解决问题"，也不是"展示分析能力"。',
-    '你的目标是：让用户感觉"你在慢慢理解我"。',
+    '你不是"情绪陪伴 AI"，也不是"心理咨询师"。',
+    '你的核心目标是：帮助用户"重新理解自己和世界"。',
     '',
-    '判断自己是否做对的唯一标准：',
-    '用户有没有感觉被倾听、被理解，而不是被分析、被定义。',
+    '成长不是来自"感受被理解更多"，而是来自"对现实的理解更清晰"。',
+    '你的衡量标准不是用户有没有感觉被共情，而是用户有没有获得：',
+    '- 更清晰的现实视角',
+    '- 对世界如何运作的理解',
+    '- 自己真正能控制什么的认知',
+    '- 更强的主体性和行动感',
+    '',
+    '=== 本轮推理路径 ===',
+    `主要推理方向：${REASONING_PATH_LABELS[currentReasoningPath] || '由 AI 自行判断'}`,
+    '不同的推理方向决定了 AI 在本轮回合应侧重使用哪套指令集。',
+    '具体行为要求见下方对应"推理路径指令"段落。',
     '',
     '=== 当前用户状态（最高优先级） ===',
     USER_STATE_LABELS[currentUserState] || '未识别',
@@ -1081,6 +1302,23 @@ function buildDialogueSystemPrompt({
     USER_STATE_INSTRUCTIONS[currentUserState] || '',
     ''
   ];
+
+  // 推理路径指令（根据当前路由方向追加对应指令集）
+  if (currentReasoningPath === REASONING_PATHS.REALITY) {
+    parts.push(REALITY_PATH_INSTRUCTIONS);
+    parts.push('');
+  } else if (currentReasoningPath === REASONING_PATHS.COGNITIVE) {
+    parts.push(COGNITIVE_PATH_INSTRUCTIONS);
+    parts.push('');
+  } else if (currentReasoningPath === REASONING_PATHS.ACTION) {
+    parts.push(ACTION_PATH_INSTRUCTIONS);
+    parts.push('');
+  } else if (currentReasoningPath === REASONING_PATHS.MIXED) {
+    parts.push(REALITY_PATH_INSTRUCTIONS);
+    parts.push('');
+    parts.push(COGNITIVE_PATH_INSTRUCTIONS);
+    parts.push('');
+  }
 
   if (isSlowMode) {
     parts.push(buildSlowModeInstruction());
@@ -1144,7 +1382,8 @@ function buildStateAnalysisPrompt({
   userMessage,
   aiReply,
   topic,
-  userState
+  userState,
+  reasoningPath
 }) {
   const dimensions = INFO_DIMENSIONS.map(d => `"${d}"`).join(', ');
 
@@ -1179,6 +1418,8 @@ function buildStateAnalysisPrompt({
           '  如果是 practical_dilemma，AI 需要更多帮助用户厘清价值观和选项，而不是消除情绪。',
           '- user_state: string, 可选值 "emotional_opening"（情绪开场）、"emotional_loop_unaware"（情绪循环无现实视角）、"emotional_loop_aware"（情绪循环有认知）、"reality_needs"（现实需求）、"cognitive_pattern"（认知模式）、"action_stuck"（行动卡住）。',
           '  根据当前对话判断用户的核心状态。',
+          '- reasoning_path: string, 可选值 "emotional"（情绪路径）、"reality"（现实路径）、"cognitive"（认知路径）、"action"（行动路径）、"mixed"（混合路径）。',
+          '  本次对话最适合的推理方向。',
           '',
           '重要原则：',
           '1. 宁可低估理解程度，不要高估。',
@@ -1197,6 +1438,7 @@ function buildStateAnalysisPrompt({
           `当前核心需求：${coreNeed || '尚未识别'}`,
           `当前主题：${topic || '尚未明确'}`,
           `当前用户状态：${userState || '未识别'}`,
+          `当前推理路径：${reasoningPath || '未识别'}`,
           '',
           '用户输入：',
           userMessage,
@@ -1252,6 +1494,12 @@ function applyStateAnalysis(session, analysis) {
   const validUserStates = Object.values(USER_STATES);
   if (analysis.user_state && validUserStates.includes(analysis.user_state)) {
     updated.user_state = analysis.user_state;
+  }
+
+  // 推理路径（来自后台分析）
+  const validReasoningPaths = Object.values(REASONING_PATHS);
+  if (analysis.reasoning_path && validReasoningPaths.includes(analysis.reasoning_path)) {
+    updated.reasoning_path = analysis.reasoning_path;
   }
 
   // 理解程度（更新逻辑不变，但 analysis prompt 已更保守）
@@ -1517,5 +1765,11 @@ module.exports = {
   resetSessionForNewTopic,
   calculateTextSimilarity,
   routeUserState,
-  isInEmotionalLoop
+  isInEmotionalLoop,
+  REASONING_PATHS,
+  REASONING_PATH_LABELS,
+  routeReasoningPath,
+  REALITY_PATH_INSTRUCTIONS,
+  COGNITIVE_PATH_INSTRUCTIONS,
+  ACTION_PATH_INSTRUCTIONS
 };
