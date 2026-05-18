@@ -23,7 +23,8 @@ const USER_STATES = {
   EMOTIONAL_LOOP_AWARE: 'emotional_loop_aware',
   REALITY_NEEDS: 'reality_needs',
   COGNITIVE_PATTERN: 'cognitive_pattern',
-  ACTION_STUCK: 'action_stuck'
+  ACTION_STUCK: 'action_stuck',
+  LIFE_NARRATION: 'life_narration'
 };
 
 const USER_STATE_LABELS = {
@@ -32,7 +33,8 @@ const USER_STATE_LABELS = {
   emotional_loop_aware: '情绪循环（有现实认知）：用户已有现实理解但仍被情绪压住，需恢复主体感',
   reality_needs: '现实需求：用户需要理解外部系统与现实运作',
   cognitive_pattern: '认知模式：用户需要觉察自己的解释模式',
-  action_stuck: '行动卡住：用户需要恢复行动主体性'
+  action_stuck: '行动卡住：用户需要恢复行动主体性',
+  life_narration: '生命历程叙述：用户表达了变化感/失去感，需引导其讲述过去与现在的对比'
 };
 
 const STYLE_LABELS = {
@@ -144,6 +146,29 @@ const EXPLORATION_RULES = [
   '每一轮都必须问自己：',
   '"在这一轮回合，继续探索感受对用户是有帮助的，还是会让用户更无力？"',
   '如果答案是后者，立即转向向外引导。',
+  '',
+  '=== 处理"变化感"对话 ===',
+  '',
+  '当用户表达以下内容时：',
+  '- "以前不是这样的"',
+  '- "我变了" / "不知道为什么会变成这样"',
+  '- "越来越没动力" / "什么都不想做了"',
+  '- "以前的我……" / "回不去了"',
+  '',
+  'AI 必须把"情绪入口"转化为"生命历程叙述"，而不是停在情绪安抚。',
+  '',
+  '第一步：反映变化感与失去感',
+  '- "你像是失去了以前那个会发光的自己，既失落，也很困惑。"',
+  '',
+  '第二步：引导用户重新描述过去的自己（一次只问一个方向）：',
+  '- "以前的你通常是什么状态？"',
+  '- "那时候什么事情最让你有活力？"',
+  '- "你觉得从什么时候开始变化明显的？"',
+  '',
+  '目标：让用户开始讲述自己的生活变化过程，而不是停留在抽象情绪里。',
+  'AI 不需要分析原因，只需要帮用户"重新看见自己"。',
+  '',
+  '禁止：长篇安慰、只围绕情绪打转、过早心理分析、"慢慢来就好"、"我会陪着你"',
   '',
   '=== 核心禁令（必须遵守） ===',
   '',
@@ -627,6 +652,47 @@ const USER_STATE_INSTRUCTIONS = {
     '- 用"你应该"句式',
     '',
     '目标：帮助用户找到第一个可操作的现实支点。'
+  ].join('\n'),
+
+  life_narration: [
+    '【用户当前状态：生命历程叙述】',
+    '用户正通过"变化感"表达一种对自我状态的困惑。',
+    'ta 在说："我不是原来的我了，我不知道为什么，我很困惑。"',
+    '',
+    '核心原则：情绪是入口，不是终点。',
+    '不要停在共情和陪伴上。',
+    '',
+    '第一步：反映变化感与失去感',
+    '用一句话承认用户正在经历的断裂感。例如：',
+    '- "你像是失去了以前那个会发光的自己，既失落，也很困惑为什么会变成现在这样。"',
+    '- "你感觉到自己在变化，但这种变化让你感到陌生。"',
+    '',
+    '第二步：引导用户重新描述过去的自己',
+    '不要急着分析原因。当前的目标是让用户讲述自己的变化过程，而不是解释它。',
+    '',
+    '引导提问（一次只问一个）：',
+    '- "以前的你通常是什么状态？"',
+    '- "那时候什么事情最让你有活力？"',
+    '- "你觉得从什么时候开始变化明显的？"',
+    '- "那时候的生活是什么样子的？和现在最大的不同是什么？"',
+    '- "以前和现在，你对自己的感觉有什么变化？"',
+    '',
+    '需要了解的方向（多轮完成，不要一次问完）：',
+    '- 过去的生活状态和结构',
+    '- 变化发生的时间点和可能的外部事件',
+    '- 人际关系的变化',
+    '- 自我价值感的变化',
+    '- 兴趣和动力的变化',
+    '',
+    '绝对禁止：',
+    '- 长篇安慰',
+    '- 只围绕情绪打转（"听起来你很难过" 然后停在这里）',
+    '- 过早心理分析（"这是因为你失去了自我价值感"）',
+    '- 停滞型回复（"慢慢来就好" "我会陪着你的" "每个人都有自己的节奏"）',
+    '- 跳过叙述直接给建议',
+    '',
+    '目标：让用户逐渐重新看见自己——从过去到现在，我是如何变成这样的？',
+    '充分认识用户，而不是解释用户。'
   ].join('\n')
 };
 const INFO_DIMENSIONS = ['event', 'emotion', 'deep_feeling', 'meaning', 'value_conflict', 'unfulfilled_need', 'self_concept', 'goal', 'constraints', 'action_readiness', 'action_obstacles'];
@@ -687,7 +753,20 @@ function routeUserState(message = '', sessionState = {}) {
     return USER_STATES.EMOTIONAL_LOOP_UNAWARE;
   }
 
-  // 6. Emotional opening：模糊情绪表达，无事件
+  // 6. Life narration：用户表达了变化感/失去感/状态衰退
+  const lifeNarrationSignals = [
+    '以前不是这样', '以前不是', '以前的我', '以前会',
+    '我变了', '我变成', '变成了现在',
+    '不知道为什么会变成', '不知道怎么会变成', '怎么会变成',
+    '越来越没', '越来越不', '什么都不想', '什么都不做',
+    '没有动力', '失去了', '以前那个',
+    '回不去了', '找不回', '已经不再'
+  ];
+  if (lifeNarrationSignals.some(s => text.includes(s))) {
+    return USER_STATES.LIFE_NARRATION;
+  }
+
+  // 7. Emotional opening：模糊情绪表达，无事件
   const emotionalOpeningSignals = ['好累', '好难过', '好崩溃', '好烦', '很累', '累了', '崩溃',
     '受不了', '不知道怎么说', '说不清', '很乱', '好慌', '好焦虑', '好痛苦',
     '不开心', '没意思', '难受', '低落', '心情不好', 'emo', '好压抑'];
@@ -785,6 +864,7 @@ function routeReasoningPath(message = '', sessionState = {}) {
   if (userState === USER_STATES.REALITY_NEEDS) return REASONING_PATHS.REALITY;
   if (userState === USER_STATES.COGNITIVE_PATTERN) return REASONING_PATHS.COGNITIVE;
   if (userState === USER_STATES.ACTION_STUCK) return REASONING_PATHS.ACTION;
+  if (userState === USER_STATES.LIFE_NARRATION) return REASONING_PATHS.EMOTIONAL;
   if (userState === USER_STATES.EMOTIONAL_LOOP_AWARE) {
     // 有认知但情绪沉重 → 混合
     return REASONING_PATHS.MIXED;
