@@ -24,6 +24,7 @@ const {
   detectSlowMode,
   shouldResetSession,
   resetSessionForNewTopic,
+  routeUserState,
 } = require("./dialogueEngine");
 
 const projectRoot = __dirname;
@@ -433,6 +434,7 @@ const server = http.createServer(async (request, response) => {
           cognitiveStack: resolvedCognitiveStack,
           memoryContext,
           sessionState,
+          userMessage: String(message).trim(),
         });
 
         // --- 调用 AI ---
@@ -457,8 +459,10 @@ const server = http.createServer(async (request, response) => {
           : null;
 
         // 更新 session 轮数（同步部分，不等待分析）
+        const currentUserState = routeUserState(String(message).trim(), sessionState);
         const returnedState = {
           ...sessionState,
+          user_state: currentUserState,
           turns_in_state: (sessionState.turns_in_state || 0) + 1,
           total_turns: (sessionState.total_turns || 0) + 1,
           last_activity_at: new Date().toISOString(),
@@ -489,6 +493,7 @@ const server = http.createServer(async (request, response) => {
               userMessage: String(message).trim(),
               aiReply: aiResult.reply,
               topic: sessionState.topic,
+              userState: currentUserState,
             });
 
             try {
