@@ -26,6 +26,10 @@ const {
   resetSessionForNewTopic,
   routeUserState,
   routeReasoningPath,
+  detectStickingPoint,
+  recommendProgressionAction,
+  detectProgressionBlockers,
+  migrateStateName,
 } = require("./dialogueEngine");
 
 const projectRoot = __dirname;
@@ -462,10 +466,24 @@ const server = http.createServer(async (request, response) => {
         // 更新 session 轮数（同步部分，不等待分析）
         const currentUserState = routeUserState(String(message).trim(), sessionState);
         const currentReasoningPath = routeReasoningPath(String(message).trim(), sessionState);
+        const currentStickingPoint = detectStickingPoint(String(message).trim(), sessionState);
+        const currentProgressionAction = recommendProgressionAction(currentStickingPoint, sessionState);
+        const currentBlockers = detectProgressionBlockers(sessionState);
+
+        // 同步更新共情计数器（简单版：检测AI回复中是否只有共情没有推进）
+        const aiReplyText = aiResult.reply || '';
+        const empathyOnlyPattern = /^[^？?。！!]*(?:听起来|感觉|感受到|我听到|你感到|你似乎)[^？?。！!]*[。！!]$/;
+        const empathyCount = empathyOnlyPattern.test(aiReplyText)
+          ? (sessionState.empathy_reflection_count || 0) + 1
+          : 0;
+
         const returnedState = {
           ...sessionState,
           user_state: currentUserState,
           reasoning_path: currentReasoningPath,
+          sticking_point: currentStickingPoint,
+          progression_action: currentProgressionAction,
+          empathy_reflection_count: empathyCount,
           turns_in_state: (sessionState.turns_in_state || 0) + 1,
           total_turns: (sessionState.total_turns || 0) + 1,
           last_activity_at: new Date().toISOString(),

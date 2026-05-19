@@ -39,24 +39,39 @@ D:\Projects\EchoMind
     └── memory-layer.md
 ```
 
-## 成长引导型对话系统
+## 成长教练对话系统（v4）
+
+### 核心目标
+
+帮用户逐渐理解自己与世界的关系。真正的成长感不是"被安慰了"，而是"我突然开始理解自己了"。
 
 ### 核心架构
 
 ```
-用户输入 → 判断对话状态 → 提取核心需求 → 评估理解程度 → 选择阶段策略 → 生成回复
+用户输入 → 卡点检测 → 推进判断 → 5阶段状态机 → 认知推进引擎 → 生成回复
 ```
 
-### 对话状态（Conversation State）
+### 5 阶段对话模型
 
-每个 session 维护一个状态机，分四个阶段推进：
+每个 session 维护一个状态机，分五个阶段推进（每阶段有最大停留轮数限制）：
 
-| 状态 | 阶段名称 | AI 行为 | 禁止行为 |
-|------|----------|---------|----------|
-| `emotion_intake` | 情绪接收 | 共情、鼓励表达、轻微提问 | 讲道理、给解决方案 |
-| `source_exploration` | 来源探索 | 提问、澄清、探索事件和触发点 | 未理解就跳到分析 |
-| `pattern_reflection` | 模式觉察 | 引导觉察、连接模式和历史 | 强行解读、抽象讨论 |
-| `action_integration` | 行动与整合 | 分析、总结、引导用户自己的答案 | 给标准答案、"你应该" |
+| 状态 | 阶段名称 | 核心目标 | 最大轮数 |
+|------|----------|---------|---------|
+| `feeling_reception` | 感受接收 | 接住情绪、理解事件、不急着分析 | 3 |
+| `reality_exploration` | 现实探索 | 搞清现实、认知放大检测、信息缺失 | 4 |
+| `cognitive_advancement` | 认知推进 | 建立"事件→自动认知→情绪结果"链 | 4 |
+| `life_structure` | 人生结构理解 | 帮用户看见真正重视/害怕什么、人格需求与现实冲突 | 3 |
+| `reality_bridging` | 现实桥接 | 帮用户思考真实需求如何进入现实世界 | 4 |
+
+旧状态名（emotion_intake, source_exploration, pattern_reflection, action_integration）保留向后兼容。
+
+### 认知推进引擎（Cognitive Progression Engine）
+
+每轮分析：
+1. **卡点检测** (`detectStickingPoint`) — 用户当前主要卡点：emotion / reality / cognition / interpersonal / self_identity / life_direction / action
+2. **推进建议** (`recommendProgressionAction`) — 当前应该：继续共情 / 探索现实 / 推进认知 / 建立结构 / 现实桥接
+3. **阻断检测** (`detectProgressionBlockers`) — 检测：共情过量、情绪停留过久、信息足够但未推进
+4. **强制推进** — 超过最大轮数或检测到阻断信号时，强制进入下一阶段
 
 ### 核心需求跟踪（Core Need）
 
@@ -64,12 +79,7 @@ D:\Projects\EchoMind
 
 ### 信息完整度（Understanding Score）
 
-五个维度的 0-1 评分：
-- `event` — 发生了什么
-- `emotion` — 用户感受
-- `reason` — 为什么会刺痛
-- `goal` — 用户想解决什么
-- `constraints` — 现实限制
+11 个维度的 0-1 评分：event, emotion, deep_feeling, meaning, value_conflict, unfulfilled_need, self_concept, goal, constraints, action_readiness, action_obstacles。
 
 低于 0.5 时 AI 禁止给出建议。
 
@@ -77,7 +87,7 @@ D:\Projects\EchoMind
 
 | 类型 | 标签 | 策略特点 |
 |------|------|----------|
-| `Emotion-first` | 共情型 | 慢进入分析，多停留情绪阶段 |
+| `Emotion-first` | 共情型 | 多停留感受接收一轮，但不超过3轮 |
 | `Logic-first` | 分析型 | 更快原因分析，强调逻辑结构 |
 | `Action-first` | 行动型 | 快速到行动，聚焦可操作步骤 |
 | Companion | 陪伴型 | 重命名为 `reflection_first`，深入模式和价值观 |
@@ -96,17 +106,19 @@ D:\Projects\EchoMind
 - `session_state` — 当前对话状态对象（前端维护、轮询带回）
 
 **响应新增：**
-- `session_state` — 更新后的对话状态（含 `state`, `core_need`, `understanding_score` 等）
+- `session_state` — 更新后的对话状态（含 `state`, `core_need`, `understanding_score`, `sticking_point`, `progression_action`, `empathy_reflection_count` 等）
 
 ### 状态分析流程
 
 1. 主请求：AI 根据当前状态和系统 prompt 生成回复（不阻塞）
 2. 后台分析：用轻量 AI 调用分析对话，输出 JSON 包含：
-   - `next_state` / `should_transition` — 状态转换建议
+   - `next_state` / `should_transition` — 状态转换建议（超过最大轮数会强制推进）
    - `core_need` — 核心需求更新
    - `understanding` — 各维度理解程度
    - `topic` — 对话主题
    - `key_insight` — 新洞察
+   - `sticking_point` — 用户当前卡点
+   - `empathy_overload` — 是否共情过量
 3. 达到阈值时自动生成结构化成长记录并保存
 
 ## 当前后端接口
@@ -119,9 +131,10 @@ D:\Projects\EchoMind
 
 ## AI 回复策略（dialogueEngine.js / server.js）
 
-- 回复长度根据阶段灵活调整：情绪接收 50-100 字，模式觉察/行动整合 200-600 字
+- 回复长度根据阶段灵活调整：感受接收/现实探索 30-80 字，认知推进/人生结构理解/现实桥接 80-200 字
 - 完整比详细更重要，不可在句子/标记中途结束
-- 结构根据状态自动适配：接住情绪 → 探索来源 → 觉察模式 → 整合行动
+- 结构根据状态自动适配：接住情绪 → 探索现实 → 推进认知 → 理解人生结构 → 桥接现实
+- 核心规则：每轮必须包含 1 句共情 + 1 个微小认知推进，不能只有共情没有推进
 - 不做医疗诊断
 - 状态分析/成长摘要后台执行，不阻塞回复
 
@@ -140,7 +153,7 @@ D:\Projects\EchoMind
 - 保持极简、疗愈、低对比蓝色视觉风格
 - 代码优先稳定可用，不追求复杂架构
 - 不引入 React/Vite/Next.js（除非用户明确要求）
-- 功能做好后默认提交并推送 GitHub main
+- 功能做好后默认提交、推送 GitHub main（Render 自动从 main 部署）
 - 影响数据库或用户数据的修改需先说明风险
 - Git: `git add <files>` → `git commit -m "msg"` → `git push origin main`
 

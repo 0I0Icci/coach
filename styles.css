@@ -474,24 +474,29 @@ h3 {
   transition: background 0.4s, color 0.4s;
 }
 
-.chat-badge-state.emotion_intake {
+.chat-badge-state.feeling_reception {
   background: rgba(66, 133, 244, 0.12);
   color: #1a5bb5;
 }
 
-.chat-badge-state.source_exploration {
+.chat-badge-state.reality_exploration {
   background: rgba(52, 168, 83, 0.12);
   color: #137333;
 }
 
-.chat-badge-state.pattern_reflection {
+.chat-badge-state.cognitive_advancement {
   background: rgba(251, 188, 4, 0.15);
   color: #996b00;
 }
 
-.chat-badge-state.action_integration {
-  background: rgba(218, 54, 190, 0.1);
-  color: #8a1b7a;
+.chat-badge-state.life_structure {
+  background: rgba(142, 68, 173, 0.12);
+  color: #6c3483;
+}
+
+.chat-badge-state.reality_bridging {
+  background: rgba(41, 128, 185, 0.12);
+  color: #1a5276;
 }
 
 .chat-badge-state.slow-mode {

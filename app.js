@@ -324,8 +324,8 @@ function createGrowthRecord(userText, assistantText) {
   const focusFunction = stack[0] || "";
   const fn = cognitiveFunctionDescriptions[focusFunction];
   const session = appState.sessionState;
-  const stateLabel = session?.state || "emotion_intake";
-  const stateNames = { emotion_intake: "情绪接收", source_exploration: "来源探索", pattern_reflection: "模式觉察", action_integration: "行动整合" };
+  const stateLabel = session?.state || "feeling_reception";
+  const stateNames = { feeling_reception: "感受接收", reality_exploration: "现实探索", cognitive_advancement: "认知推进", life_structure: "人生结构理解", reality_bridging: "现实桥接", emotion_intake: "感受接收", source_exploration: "现实探索", pattern_reflection: "认知推进", action_integration: "现实桥接" };
   const stateName = stateNames[stateLabel] || "自我理解";
   const topic = session?.topic ? `围绕“${session.topic}”` : "";
   const needInfo = session?.core_need ? `（核心需求：${session.core_need.slice(0, 30)}）` : "";
@@ -333,7 +333,7 @@ function createGrowthRecord(userText, assistantText) {
     ? `${topic}${needInfo}——当前处于${stateName}阶段，有了新的觉察。`
     : `你把“${userText.slice(0, 20)}${userText.length > 20 ? "..." : ""}”带进了对话，进入${stateName}阶段，获得了一次围绕${fn?.theme || "自我理解"}的整理。`;
   const turn = session?.total_turns || 0;
-  const title = turn > 4 && session?.state === "action_integration" ? "完成一轮深度成长" : "一次新的梳理";
+  const title = turn > 4 && (session?.state === "action_integration" || session?.state === "reality_bridging") ? "完成一轮深度成长" : "一次新的梳理";
   return { id: crypto.randomUUID?.() || String(Date.now()), title, summary, focusFunction, createdAt: new Date().toISOString() };
 }
 
@@ -390,16 +390,29 @@ function updateChatStateBadge() {
     chatStateBadge.className = 'chat-badge chat-badge-state';
     return;
   }
+  // v4 新状态名 + 旧状态兼容
   const stateNames = {
-    emotion_intake: '情绪接收',
-    source_exploration: '来源探索',
-    pattern_reflection: '模式觉察',
-    action_integration: '行动整合',
+    feeling_reception: '感受接收',
+    reality_exploration: '现实探索',
+    cognitive_advancement: '认知推进',
+    life_structure: '人生结构理解',
+    reality_bridging: '现实桥接',
+    // 兼容旧状态名
+    emotion_intake: '感受接收',
+    source_exploration: '现实探索',
+    pattern_reflection: '认知推进',
+    action_integration: '现实桥接',
   };
   const label = stateNames[session.state] || session.state;
   const slowSuffix = session.slow_mode ? ' · 慢' : '';
   chatStateBadge.textContent = `状态：${label}${slowSuffix}`;
-  chatStateBadge.className = `chat-badge chat-badge-state ${session.state}${session.slow_mode ? ' slow-mode' : ''}`;
+  // 使用规范化后的状态名作为 CSS class
+  const normalizedState = {
+    emotion_intake: 'feeling_reception', source_exploration: 'reality_exploration',
+    pattern_reflection: 'cognitive_advancement', action_integration: 'reality_bridging'
+  };
+  const cssState = normalizedState[session.state] || session.state;
+  chatStateBadge.className = `chat-badge chat-badge-state ${cssState}${session.slow_mode ? ' slow-mode' : ''}`;
 }
 
 function updateProfileView() {
