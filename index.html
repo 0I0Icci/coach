@@ -13,6 +13,30 @@
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
+    <!-- Mobile hamburger -->
+    <button id="hamburger" class="hamburger" type="button" aria-label="打开菜单">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+
+    <!-- Fixed sidebar navigation -->
+    <aside id="app-nav" class="app-nav" aria-label="页面导航">
+      <div class="sidebar-header">
+        <div class="brand">
+          <span class="brand-mark">E</span>
+          <span>EchoMind</span>
+        </div>
+        <button id="sidebar-close" class="sidebar-close" type="button" aria-label="关闭菜单">&times;</button>
+      </div>
+      <nav class="sidebar-nav">
+        <button id="nav-chat" class="sidebar-button" type="button"><span class="sidebar-icon">💬</span> 对话</button>
+        <button id="nav-profile" class="sidebar-button" type="button"><span class="sidebar-icon">📋</span> 个人主页</button>
+        <button id="logout-button" class="sidebar-button sidebar-logout" type="button"><span class="sidebar-icon">🚪</span> 退出登录</button>
+      </nav>
+    </aside>
+    <div id="sidebar-overlay" class="sidebar-overlay"></div>
+
     <main class="page-shell">
       <header class="top-shell fade-in">
         <div class="brand">
@@ -34,12 +58,6 @@
           <p id="auth-status" class="auth-status">正在连接云端记忆...</p>
           <p id="cloud-status" class="cloud-status">请使用邮箱登录进入内测</p>
         </div>
-      </section>
-
-      <section id="app-nav" class="app-nav is-hidden" aria-label="页面导航">
-        <button id="nav-chat" class="secondary-button" type="button">对话</button>
-        <button id="nav-profile" class="secondary-button" type="button">个人主页</button>
-        <button id="logout-button" class="secondary-button" type="button">退出登录</button>
       </section>
 
       <section id="home-view" class="view-card view-card-home fade-in" aria-hidden="true">

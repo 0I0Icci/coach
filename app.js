@@ -117,6 +117,9 @@ const views = {
 };
 
 const appNav = document.getElementById("app-nav");
+const hamburger = document.getElementById("hamburger");
+const sidebarOverlay = document.getElementById("sidebar-overlay");
+const sidebarClose = document.getElementById("sidebar-close");
 const startButton = document.getElementById("start-button");
 const knownTypeButton = document.getElementById("known-type-button");
 const unknownTypeButton = document.getElementById("unknown-type-button");
@@ -169,7 +172,25 @@ function showView(viewName) {
     element.classList.toggle("is-active", isActive);
     element.setAttribute("aria-hidden", String(!isActive));
   });
-  appNav.classList.toggle("is-hidden", viewName === "login" || !cloudState.user);
+  const sidebarHidden = viewName === "login" || !cloudState.user;
+  appNav.classList.toggle("is-hidden", sidebarHidden);
+  hamburger.classList.toggle("is-hidden", sidebarHidden);
+  closeSidebar();
+}
+
+function toggleSidebar() {
+  const isOpen = appNav.classList.toggle("is-open");
+  hamburger.classList.toggle("is-open", isOpen);
+  sidebarOverlay.classList.toggle("is-active", isOpen);
+  if (isOpen) {
+    appNav.classList.remove("is-hidden");
+  }
+}
+
+function closeSidebar() {
+  appNav.classList.remove("is-open");
+  hamburger.classList.remove("is-open");
+  sidebarOverlay.classList.remove("is-active");
 }
 
 function openTestSite() { window.open(TEST_URL, "_blank", "noopener,noreferrer"); }
@@ -324,8 +345,8 @@ function createGrowthRecord(userText, assistantText) {
   const focusFunction = stack[0] || "";
   const fn = cognitiveFunctionDescriptions[focusFunction];
   const session = appState.sessionState;
-  const stateLabel = session?.state || "feeling_reception";
-  const stateNames = { feeling_reception: "感受接收", reality_exploration: "现实探索", cognitive_advancement: "认知推进", life_structure: "人生结构理解", reality_bridging: "现实桥接", emotion_intake: "感受接收", source_exploration: "现实探索", pattern_reflection: "认知推进", action_integration: "现实桥接" };
+  const stateLabel = session?.state || "_unknown";
+  const stateNames = { feeling_reception: "感受接收", reality_exploration: "现实探索", cognitive_advancement: "认知推进", life_structure: "人生结构理解", reality_bridging: "现实桥接", emotion_support: "情绪接住", reality_understanding: "现实理解", action_guidance: "行动推进", identity_reconstruction: "自我重构", emotion_intake: "感受接收", source_exploration: "现实探索", pattern_reflection: "认知推进", action_integration: "现实桥接" };
   const stateName = stateNames[stateLabel] || "自我理解";
   const topic = session?.topic ? `围绕“${session.topic}”` : "";
   const needInfo = session?.core_need ? `（核心需求：${session.core_need.slice(0, 30)}）` : "";
@@ -397,6 +418,11 @@ function updateChatStateBadge() {
     cognitive_advancement: '认知推进',
     life_structure: '人生结构理解',
     reality_bridging: '现实桥接',
+    // v5 需求驱动状态
+    emotion_support: '情绪接住',
+    reality_understanding: '现实理解',
+    action_guidance: '行动推进',
+    identity_reconstruction: '自我重构',
     // 兼容旧状态名
     emotion_intake: '感受接收',
     source_exploration: '现实探索',
@@ -465,6 +491,11 @@ function calculateResult() {
 }
 
 function showResult() { const result = calculateResult(); resultTitle.textContent = `你的沟通偏好：${result.label}`; resultDescription.textContent = result.text; showView("result"); }
+
+// Sidebar toggle
+hamburger.addEventListener("click", toggleSidebar);
+sidebarOverlay.addEventListener("click", closeSidebar);
+sidebarClose.addEventListener("click", closeSidebar);
 
 startButton.addEventListener("click", () => { if (hasSavedProfile()) { seedChat({ preserveHistory: true }); showView("chat"); return; } showView("choice"); });
 knownTypeButton.addEventListener("click", () => showView("mbti"));

@@ -24,11 +24,9 @@ const {
   detectSlowMode,
   shouldResetSession,
   resetSessionForNewTopic,
-  routeUserState,
-  routeReasoningPath,
-  detectStickingPoint,
-  recommendProgressionAction,
-  detectProgressionBlockers,
+  estimateNeeds,
+  determinePrimaryNeed,
+  PRIMARY_NEED_TO_STATE,
   migrateStateName,
 } = require("./dialogueEngine");
 
@@ -463,32 +461,20 @@ const server = http.createServer(async (request, response) => {
           }), null)
           : null;
 
-        // 更新 session 轮数（同步部分，不等待分析）
-        const currentUserState = routeUserState(String(message).trim(), sessionState);
-        const currentReasoningPath = routeReasoningPath(String(message).trim(), sessionState);
-        const currentStickingPoint = detectStickingPoint(String(message).trim(), sessionState);
-        const currentProgressionAction = recommendProgressionAction(currentStickingPoint, sessionState);
-        const currentBlockers = detectProgressionBlockers(sessionState);
-
-        // 同步更新共情计数器（简单版：检测AI回复中是否只有共情没有推进）
-        const aiReplyText = aiResult.reply || '';
-        const empathyOnlyPattern = /^[^？?。！!]*(?:听起来|感觉|感受到|我听到|你感到|你似乎)[^？?。！!]*[。！!]$/;
-        const empathyCount = empathyOnlyPattern.test(aiReplyText)
-          ? (sessionState.empathy_reflection_count || 0) + 1
-          : 0;
+        // 同步需求估计（关键词驱动，用于即时返回给前端）
+        const needs = estimateNeeds(String(message).trim(), sessionState);
+        const primaryNeed = determinePrimaryNeed(needs);
 
         const returnedState = {
           ...sessionState,
-          user_state: currentUserState,
-          reasoning_path: currentReasoningPath,
-          sticking_point: currentStickingPoint,
-          progression_action: currentProgressionAction,
-          empathy_reflection_count: empathyCount,
+          needs,
+          primary_need: primaryNeed,
+          state: PRIMARY_NEED_TO_STATE[primaryNeed] || sessionState.state || 'feeling_reception',
           turns_in_state: (sessionState.turns_in_state || 0) + 1,
           total_turns: (sessionState.total_turns || 0) + 1,
           last_activity_at: new Date().toISOString(),
           last_user_message: String(message).trim() || sessionState.last_user_message,
-          needs_opening: false, // 只在一轮生效，下一轮清除
+          needs_opening: false,
         };
 
         json(response, 200, {
@@ -514,8 +500,8 @@ const server = http.createServer(async (request, response) => {
               userMessage: String(message).trim(),
               aiReply: aiResult.reply,
               topic: sessionState.topic,
-              userState: currentUserState,
-              reasoningPath: currentReasoningPath,
+              needs,
+              primaryNeed,
             });
 
             try {
