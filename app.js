@@ -174,6 +174,7 @@ function showView(viewName) {
   });
   const sidebarHidden = viewName === "login" || !cloudState.user;
   appNav.classList.toggle("is-hidden", sidebarHidden);
+  appNav.setAttribute("aria-hidden", String(sidebarHidden));
   hamburger.classList.toggle("is-hidden", sidebarHidden);
   closeSidebar();
 }
@@ -181,16 +182,23 @@ function showView(viewName) {
 function toggleSidebar() {
   const isOpen = appNav.classList.toggle("is-open");
   hamburger.classList.toggle("is-open", isOpen);
+  hamburger.setAttribute("aria-expanded", String(isOpen));
   sidebarOverlay.classList.toggle("is-active", isOpen);
+  sidebarOverlay.setAttribute("aria-hidden", String(!isOpen));
+  document.body.classList.toggle("sidebar-lock", isOpen);
   if (isOpen) {
     appNav.classList.remove("is-hidden");
+    appNav.setAttribute("aria-hidden", "false");
   }
 }
 
 function closeSidebar() {
   appNav.classList.remove("is-open");
   hamburger.classList.remove("is-open");
+  hamburger.setAttribute("aria-expanded", "false");
   sidebarOverlay.classList.remove("is-active");
+  sidebarOverlay.setAttribute("aria-hidden", "true");
+  document.body.classList.remove("sidebar-lock");
 }
 
 function openTestSite() { window.open(TEST_URL, "_blank", "noopener,noreferrer"); }

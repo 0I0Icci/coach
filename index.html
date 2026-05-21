@@ -14,7 +14,7 @@
   </head>
   <body>
     <!-- Mobile hamburger -->
-    <button id="hamburger" class="hamburger" type="button" aria-label="打开菜单">
+    <button id="hamburger" class="hamburger" type="button" aria-label="打开菜单" aria-expanded="false" aria-controls="app-nav">
       <span></span>
       <span></span>
       <span></span>
@@ -35,7 +35,7 @@
         <button id="logout-button" class="sidebar-button sidebar-logout" type="button"><span class="sidebar-icon">🚪</span> 退出登录</button>
       </nav>
     </aside>
-    <div id="sidebar-overlay" class="sidebar-overlay"></div>
+    <div id="sidebar-overlay" class="sidebar-overlay" aria-hidden="true"></div>
 
     <main class="page-shell">
       <header class="top-shell fade-in">

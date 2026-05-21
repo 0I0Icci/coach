@@ -40,6 +40,10 @@ body {
     linear-gradient(180deg, var(--bg-top), var(--bg-bottom));
 }
 
+body.sidebar-lock {
+  overflow: hidden;
+}
+
 body::before {
   content: "";
   position: fixed;
