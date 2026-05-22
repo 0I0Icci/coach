@@ -32,6 +32,7 @@
       <nav class="sidebar-nav">
         <button id="nav-chat" class="sidebar-button" type="button"><span class="sidebar-icon">💬</span> 对话</button>
         <button id="nav-profile" class="sidebar-button" type="button"><span class="sidebar-icon">📋</span> 个人主页</button>
+        <button id="nav-growth" class="sidebar-button" type="button"><span class="sidebar-icon">📈</span> 成长记录</button>
         <button id="logout-button" class="sidebar-button sidebar-logout" type="button"><span class="sidebar-icon">🚪</span> 退出登录</button>
       </nav>
     </aside>
@@ -157,6 +158,38 @@
             <button id="chat-send-button" class="primary-button" type="submit">发送</button>
           </div>
         </form>
+      </section>
+
+      <section id="growth-journal-view" class="view-card view-card-growth fade-in" aria-hidden="true">
+        <div class="growth-journal-header">
+          <div>
+            <p class="eyebrow">Growth Journal</p>
+            <h2>你的成长记录</h2>
+          </div>
+          <button id="growth-chat-button" class="secondary-button" type="button">回到对话</button>
+        </div>
+
+        <div class="growth-journal-content">
+          <!-- Cognitive summary overview card -->
+          <div id="cognitive-summary-card" class="cognitive-summary-card">
+            <div class="cognitive-summary-header">
+              <h3>认知模式概览</h3>
+              <span id="cognitive-summary-date" class="cognitive-summary-date"></span>
+            </div>
+            <div id="cognitive-summary-body" class="cognitive-summary-body">
+              <p class="section-note">完成几次深度对话后，这里会生成你的认知模式摘要。</p>
+            </div>
+          </div>
+
+          <!-- Timeline filter -->
+          <div class="growth-timeline-header">
+            <h3>成长时间线</h3>
+          </div>
+
+          <div id="growth-timeline" class="growth-timeline">
+            <p class="section-note">完成对话后，成长记录会出现在这里。</p>
+          </div>
+        </div>
       </section>
 
       <section id="profile-view" class="view-card view-card-profile fade-in" aria-hidden="true">

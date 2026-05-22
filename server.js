@@ -8,7 +8,19 @@ const {
   saveChatMessage,
   saveConversationSummary,
   saveGrowthRecord,
+  getGrowthRecords,
+  getCognitiveSummary,
+  updateCognitiveSummary,
 } = require("./supabaseService");
+
+const {
+  buildGrowthRecordPrompt,
+  parseGrowthRecord,
+  buildCognitiveSummaryPrompt,
+  parseCognitiveSummary,
+  shouldGenerateMemoryRecord,
+  shouldUpdateCognitiveSummary,
+} = require("./memory-generator");
 
 const {
   createInitialSessionState,
@@ -438,6 +450,7 @@ const server = http.createServer(async (request, response) => {
           memoryContext,
           sessionState,
           userMessage: String(message).trim(),
+          cognitiveSummary: profile?.cognitive_summary || null,
         });
 
         // --- 调用 AI ---
@@ -522,31 +535,38 @@ const server = http.createServer(async (request, response) => {
                   analyzedStateCache.delete(firstKey);
                 }
 
-                // 2. 检查是否需要生成成长摘要
-                if (shouldGenerateGrowthSummary(updated)) {
+                // 2. 检查是否需要生成成长记录（memory-generator）
+                if (shouldGenerateMemoryRecord(updated)) {
                   try {
-                    const growthPrompt = buildGrowthSummaryPrompt(updated, [
+                    const historyMessages = [
+                      ...(Array.isArray(history) ? history : []).filter(m => m.role === 'user' || m.role === 'assistant').slice(-8),
                       { role: 'user', content: String(message).trim() },
                       { role: 'assistant', content: aiResult.reply },
-                    ]);
-                    const growthResult = await callDeepSeek(growthPrompt.messages, {
-                      maxTokens: growthPrompt.maxTokens || 500,
-                      temperature: growthPrompt.temperature || 0.3,
-                    });
-                    const growth = parseGrowthSummary(growthResult.reply);
+                    ];
 
-                    if (growth) {
+                    // 获取当前认知摘要（如有）
+                    const existingSummary = canUseMemory
+                      ? await safeDatabaseCall(() => getCognitiveSummary(owner), null)
+                      : null;
+
+                    const recordPrompt = buildGrowthRecordPrompt(updated, historyMessages, { existingSummary });
+                    const recordResult = await callDeepSeek(recordPrompt.messages, {
+                      maxTokens: recordPrompt.maxTokens || 600,
+                      temperature: recordPrompt.temperature || 0.2,
+                    });
+                    const record = parseGrowthRecord(recordResult.reply);
+
+                    if (record) {
                       // 保存成长记录到数据库
                       await safeDatabaseCall(() => saveGrowthRecord({
                         ...owner,
-                        title: growth.title || '一次新的成长记录',
-                        summary: growth.summary || '',
+                        title: record.title || '一次新的成长记录',
+                        summary: record.conclusion || record.title || '',
                         signals: {
-                          event: growth.event,
-                          emotion: growth.emotion,
-                          coreConflict: growth.core_conflict,
-                          userPattern: growth.user_pattern,
-                          growth: growth.growth,
+                          ...record.signals,
+                          changeFrom: record.changeFrom,
+                          changeTo: record.changeTo,
+                          actionMeasures: record.actionMeasures,
                           focusFunction: resolvedCognitiveStack?.[0] || null,
                           mbtiType: resolvedMbtiType,
                           communicationStyle: resolvedCommunicationStyle,
@@ -556,16 +576,53 @@ const server = http.createServer(async (request, response) => {
                         },
                       }), null);
 
-                      // 同时保存简短摘要用于历史上下文
+                      // 保存简短摘要用于历史上下文
                       await safeDatabaseCall(() => saveConversationSummary({
                         ...owner,
-                        summary: growth.summary || '完成了新一轮成长对话。',
+                        summary: record.conclusion || '完成了新一轮成长对话。',
                         topic_tag,
                         emotion_tag,
                       }), null);
+
+                      // 检查是否需要更新认知摘要（累计每 3 条更新一次）
+                      if (canUseMemory) {
+                        const existingRecords = await safeDatabaseCall(() => getGrowthRecords(owner), []);
+                        const recordCount = Array.isArray(existingRecords) ? existingRecords.length : 0;
+                        if (shouldUpdateCognitiveSummary(recordCount - 1, 1)) {
+                          try {
+                            const allRecords = Array.isArray(existingRecords) ? existingRecords.map(r => ({
+                              title: r.title,
+                              changeFrom: r.signals?.changeFrom || '',
+                              changeTo: r.signals?.changeTo || '',
+                              conclusion: r.summary || '',
+                              actionMeasures: r.signals?.actionMeasures || [],
+                            })) : [record];
+
+                            const summaryPrompt = buildCognitiveSummaryPrompt(allRecords, {
+                              mbti_type: resolvedMbtiType,
+                              communication_style: resolvedCommunicationStyle,
+                            });
+                            const summaryResult = await callDeepSeek(summaryPrompt.messages, {
+                              maxTokens: summaryPrompt.maxTokens || 400,
+                              temperature: summaryPrompt.temperature || 0.2,
+                            });
+                            const cognitiveSummary = parseCognitiveSummary(summaryResult.reply);
+
+                            if (cognitiveSummary) {
+                              await safeDatabaseCall(() => updateCognitiveSummary({
+                                ...owner,
+                                cognitive_summary: cognitiveSummary,
+                              }), null);
+                              console.log(`[Cognitive Summary] Updated for user ${user_id || anonymous_user_id}`);
+                            }
+                          } catch (summaryErr) {
+                            console.warn("Cognitive summary update skipped:", summaryErr.message);
+                          }
+                        }
+                      }
                     }
                   } catch (innerErr) {
-                    console.warn("Growth summary generation skipped:", innerErr.message);
+                    console.warn("Growth record generation skipped:", innerErr.message);
                   }
                 }
               }
@@ -579,6 +636,137 @@ const server = http.createServer(async (request, response) => {
       }
     });
 
+    return;
+  }
+
+  // --- GET /api/user/growth-records ---
+  if (request.method === "GET" && requestUrl.pathname === "/api/user/growth-records") {
+    const user_id = requestUrl.searchParams.get("user_id");
+    const anonymous_user_id = requestUrl.searchParams.get("anonymous_user_id");
+
+    if (!user_id && !anonymous_user_id) {
+      json(response, 400, { error: "user_id or anonymous_user_id is required." });
+      return;
+    }
+
+    const result = await safeDatabaseCall(() => getGrowthRecords({ user_id, anonymous_user_id, limit: 50 }), []);
+    json(response, 200, { records: result });
+    return;
+  }
+
+  // --- GET /api/user/cognitive-summary ---
+  if (request.method === "GET" && requestUrl.pathname === "/api/user/cognitive-summary") {
+    const user_id = requestUrl.searchParams.get("user_id");
+    const anonymous_user_id = requestUrl.searchParams.get("anonymous_user_id");
+
+    if (!user_id && !anonymous_user_id) {
+      json(response, 400, { error: "user_id or anonymous_user_id is required." });
+      return;
+    }
+
+    const summary = await safeDatabaseCall(() => getCognitiveSummary({ user_id, anonymous_user_id }), null);
+    json(response, 200, { summary });
+    return;
+  }
+
+  // --- POST /api/session/complete ---
+  if (request.method === "POST" && requestUrl.pathname === "/api/session/complete") {
+    let body = "";
+    request.on("data", (chunk) => { body += chunk; });
+    request.on("end", async () => {
+      try {
+        const payload = JSON.parse(body || "{}");
+        const { user_id = null, anonymous_user_id = null, session_state = null, history = [] } = payload;
+
+        if (!session_state || !session_state.session_id) {
+          json(response, 400, { error: "session_state with session_id is required." });
+          return;
+        }
+
+        const owner = { user_id, anonymous_user_id };
+        if (!hasOwner(owner) || !hasDatabaseAccess()) {
+          json(response, 400, { error: "user_id or anonymous_user_id and database access required." });
+          return;
+        }
+
+        const historyMessages = Array.isArray(history) ? history.slice(-8) : [];
+        const existingSummary = await safeDatabaseCall(() => getCognitiveSummary(owner), null);
+
+        // Generate growth record
+        const recordPrompt = buildGrowthRecordPrompt(session_state, historyMessages, { existingSummary });
+        const recordResult = await callDeepSeek(recordPrompt.messages, {
+          maxTokens: recordPrompt.maxTokens || 600,
+          temperature: recordPrompt.temperature || 0.2,
+        });
+        const record = parseGrowthRecord(recordResult.reply);
+
+        if (!record) {
+          json(response, 500, { error: "Failed to generate growth record." });
+          return;
+        }
+
+        // Save growth record
+        const savedRecord = await safeDatabaseCall(() => saveGrowthRecord({
+          ...owner,
+          title: record.title || '一次新的成长记录',
+          summary: record.conclusion || record.title || '',
+          signals: {
+            ...record.signals,
+            changeFrom: record.changeFrom,
+            changeTo: record.changeTo,
+            actionMeasures: record.actionMeasures,
+            sessionId: session_state.session_id,
+            topic: session_state.topic,
+            coreNeed: session_state.core_need,
+          },
+        }), null);
+
+        // Update cognitive summary if needed
+        if (savedRecord) {
+          const allRecords = await safeDatabaseCall(() => getGrowthRecords(owner), []);
+          const recordCount = Array.isArray(allRecords) ? allRecords.length : 0;
+          if (shouldUpdateCognitiveSummary(recordCount - 1, 1)) {
+            try {
+              const formatted = Array.isArray(allRecords) ? allRecords.map(r => ({
+                title: r.title,
+                changeFrom: r.signals?.changeFrom || '',
+                changeTo: r.signals?.changeTo || '',
+                conclusion: r.summary || '',
+                actionMeasures: r.signals?.actionMeasures || [],
+              })) : [record];
+
+              const summaryPrompt = buildCognitiveSummaryPrompt(formatted, {});
+              const summaryResult = await callDeepSeek(summaryPrompt.messages, {
+                maxTokens: summaryPrompt.maxTokens || 400,
+                temperature: summaryPrompt.temperature || 0.2,
+              });
+              const cognitiveSummary = parseCognitiveSummary(summaryResult.reply);
+              if (cognitiveSummary) {
+                await safeDatabaseCall(() => updateCognitiveSummary({
+                  ...owner,
+                  cognitive_summary: cognitiveSummary,
+                }), null);
+              }
+            } catch (summaryErr) {
+              console.warn("Cognitive summary update skipped:", summaryErr.message);
+            }
+          }
+        }
+
+        json(response, 200, {
+          success: true,
+          record: {
+            title: record.title,
+            changeFrom: record.changeFrom,
+            changeTo: record.changeTo,
+            conclusion: record.conclusion,
+            actionMeasures: record.actionMeasures,
+          },
+        });
+      } catch (error) {
+        json(response, 500, { error: error.message || "Unexpected server error." });
+      }
+    });
     return;
   }
 

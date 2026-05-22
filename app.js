@@ -114,6 +114,7 @@ const views = {
   login: document.getElementById("login-view"), home: document.getElementById("home-view"), choice: document.getElementById("choice-view"),
   mbti: document.getElementById("mbti-view"), test: document.getElementById("style-test-view"), result: document.getElementById("style-result-view"),
   chat: document.getElementById("chat-view"), profile: document.getElementById("profile-view"),
+  growth: document.getElementById("growth-journal-view"),
 };
 
 const appNav = document.getElementById("app-nav");
@@ -519,6 +520,173 @@ logoutButton.addEventListener("click", async () => { if (!cloudState.client) ret
 navChatButton.addEventListener("click", () => { if (hasSavedProfile()) { seedChat({ preserveHistory: true }); showView("chat"); } else showView("home"); });
 navProfileButton.addEventListener("click", () => { updateProfileView(); showView("profile"); });
 profileChatButton.addEventListener("click", () => { seedChat({ preserveHistory: true }); showView("chat"); });
+
+// Growth journal
+const navGrowthButton = document.getElementById("nav-growth");
+const growthChatButton = document.getElementById("growth-chat-button");
+const cognitiveSummaryBody = document.getElementById("cognitive-summary-body");
+const cognitiveSummaryDate = document.getElementById("cognitive-summary-date");
+const growthTimeline = document.getElementById("growth-timeline");
+
+const ACTION_CHECK_KEY = "echomind:action-checks";
+
+function loadActionChecks() {
+  try { return JSON.parse(localStorage.getItem(ACTION_CHECK_KEY) || "{}"); } catch { return {}; }
+}
+function saveActionChecks(checks) {
+  try { localStorage.setItem(ACTION_CHECK_KEY, JSON.stringify(checks)); } catch {}
+}
+
+async function loadGrowthJournal() {
+  if (!cloudState.user && !cloudState.client) return;
+
+  const userId = cloudState.user?.id;
+  const params = userId ? `?user_id=${encodeURIComponent(userId)}` : "";
+
+  try {
+    const [recordsRes, summaryRes] = await Promise.all([
+      fetch(`${API_BASE_URL}/api/user/growth-records${params}`),
+      fetch(`${API_BASE_URL}/api/user/cognitive-summary${params}`),
+    ]);
+
+    if (recordsRes.ok) {
+      const { records } = await recordsRes.json();
+      renderGrowthTimeline(records || []);
+    }
+    if (summaryRes.ok) {
+      const { summary } = await summaryRes.json();
+      renderCognitiveSummary(summary);
+    }
+  } catch (error) {
+    console.warn("Failed to load growth journal:", error.message);
+  }
+}
+
+function renderCognitiveSummary(summary) {
+  if (!summary || typeof summary !== "object") {
+    cognitiveSummaryBody.innerHTML = '<p class="section-note">完成几次深度对话后，这里会生成你的认知模式摘要。</p>';
+    cognitiveSummaryDate.textContent = "";
+    return;
+  }
+
+  const parts = [];
+
+  if (Array.isArray(summary.thinking_habits) && summary.thinking_habits.length) {
+    parts.push('<div class="cognitive-section-label">思维习惯</div>');
+    parts.push('<div class="cognitive-tag-list">' +
+      summary.thinking_habits.map(t => `<span class="cognitive-tag">${t}</span>`).join("") +
+      '</div>');
+  }
+  if (Array.isArray(summary.recurring_themes) && summary.recurring_themes.length) {
+    parts.push('<div class="cognitive-section-label" style="margin-top:12px">反复出现的主题</div>');
+    parts.push('<div class="cognitive-tag-list">' +
+      summary.recurring_themes.map(t => `<span class="cognitive-tag">${t}</span>`).join("") +
+      '</div>');
+  }
+  if (summary.emotional_patterns) {
+    parts.push(`<p><strong>情绪模式：</strong>${summary.emotional_patterns}</p>`);
+  }
+  if (summary.cognitive_progress) {
+    parts.push(`<p><strong>认知进展：</strong>${summary.cognitive_progress}</p>`);
+  }
+  if (summary.recent_focus) {
+    parts.push(`<p><strong>近期成长方向：</strong>${summary.recent_focus}</p>`);
+  }
+  if (summary.suggested_approach) {
+    parts.push(`<p><strong>建议对话方式：</strong>${summary.suggested_approach}</p>`);
+  }
+
+  cognitiveSummaryBody.innerHTML = parts.join("\n");
+  cognitiveSummaryDate.textContent = "基于过往对话生成";
+}
+
+function renderGrowthTimeline(records) {
+  if (!Array.isArray(records) || records.length === 0) {
+    growthTimeline.innerHTML = '<p class="section-note">完成对话后，成长记录会出现在这里。</p>';
+    return;
+  }
+
+  const checks = loadActionChecks();
+
+  growthTimeline.innerHTML = records.map((record) => {
+    const signals = record.signals || {};
+    const changeFrom = signals.changeFrom || "";
+    const changeTo = signals.changeTo || "";
+    const actionMeasures = Array.isArray(signals.actionMeasures) ? signals.actionMeasures : [];
+    const conclusion = record.summary || "";
+    const date = new Date(record.created_at || Date.now()).toLocaleDateString("zh-CN", {
+      year: "numeric", month: "short", day: "numeric",
+    });
+    const recordId = record.id;
+
+    const detailsHtml = [
+      signals.event ? `<div class="growth-record-signal"><strong>触发：</strong>${signals.event}</div>` : "",
+      signals.emotion ? `<div class="growth-record-signal"><strong>情绪：</strong>${signals.emotion}</div>` : "",
+      signals.coreConflict ? `<div class="growth-record-signal"><strong>核心冲突：</strong>${signals.coreConflict}</div>` : "",
+      signals.userPattern ? `<div class="growth-record-signal"><strong>行为模式：</strong>${signals.userPattern}</div>` : "",
+      signals.growth ? `<div class="growth-record-signal"><strong>觉察与成长：</strong>${signals.growth}</div>` : "",
+    ].filter(Boolean).join("\n");
+
+    const measuresHtml = actionMeasures.length
+      ? '<div class="action-measures">' + actionMeasures.map((m, i) => {
+          const checkId = `${recordId}-${i}`;
+          const checked = checks[checkId] ? "checked" : "";
+          return `<label class="action-measure-item ${checked ? 'is-checked' : ''}">
+            <input type="checkbox" data-check-id="${checkId}" ${checked} />
+            <span>${m}</span>
+          </label>`;
+        }).join("") + '</div>'
+      : "";
+
+    const changeHtml = changeFrom && changeTo
+      ? `<div class="growth-record-change">
+          <span class="growth-record-change-from">${changeFrom}</span>
+          <span class="growth-record-change-arrow">→</span>
+          <span class="growth-record-change-to">${changeTo}</span>
+        </div>`
+      : "";
+
+    return `<article class="growth-record-card" data-record-id="${recordId}">
+      <div class="growth-record-card-header">
+        <h4>${record.title || "一次新的成长记录"}</h4>
+        <span class="growth-record-date">${date}</span>
+      </div>
+      ${changeHtml}
+      ${conclusion ? `<div class="growth-record-conclusion">${conclusion}</div>` : ""}
+      <div class="growth-record-details">
+        ${detailsHtml}
+        ${measuresHtml}
+      </div>
+    </article>`;
+  }).join("\n");
+
+  // Event listeners for expand/collapse
+  growthTimeline.querySelectorAll(".growth-record-card").forEach((card) => {
+    card.addEventListener("click", (e) => {
+      if (e.target.type === "checkbox") return;
+      card.classList.toggle("is-expanded");
+    });
+  });
+
+  // Event listeners for action measure checkboxes
+  growthTimeline.querySelectorAll('.action-measure-item input[type="checkbox"]').forEach((cb) => {
+    cb.addEventListener("change", () => {
+      const checks = loadActionChecks();
+      checks[cb.dataset.checkId] = cb.checked;
+      saveActionChecks(checks);
+      cb.closest(".action-measure-item").classList.toggle("is-checked", cb.checked);
+    });
+  });
+}
+
+navGrowthButton.addEventListener("click", () => {
+  showView("growth");
+  loadGrowthJournal();
+});
+growthChatButton.addEventListener("click", () => {
+  seedChat({ preserveHistory: true });
+  showView("chat");
+});
 
 loadStoredState();
 showView("login");

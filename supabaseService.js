@@ -411,9 +411,80 @@ async function getUserProfile({
 
     let query = getSupabaseAdmin()
       .from("user_profiles")
-      .select("id, mbti, mbti_type, communication_style, communication_style_description, cognitive_stack, test_answers, created_at, updated_at")
+      .select("id, mbti, mbti_type, communication_style, communication_style_description, cognitive_stack, test_answers, cognitive_summary, created_at, updated_at")
       .limit(1)
       .maybeSingle();
+
+    query = applyOwnerFilter(query, { user_id, anonymous_user_id });
+
+    const { data, error } = await query;
+    return result(data, error);
+  } catch (error) {
+    return result(null, error);
+  }
+}
+
+async function getGrowthRecords({
+  user_id = null,
+  anonymous_user_id = null,
+  limit = 50,
+} = {}) {
+  try {
+    requireOwner({ user_id, anonymous_user_id });
+
+    let query = getSupabaseAdmin()
+      .from("growth_records")
+      .select("id, title, summary, signals, created_at")
+      .order("created_at", { ascending: false })
+      .limit(clampLimit(limit, 50, 200));
+
+    query = applyOwnerFilter(query, { user_id, anonymous_user_id });
+
+    const { data, error } = await query;
+    return result(data || [], error);
+  } catch (error) {
+    return result(null, error);
+  }
+}
+
+async function getCognitiveSummary({
+  user_id = null,
+  anonymous_user_id = null,
+} = {}) {
+  try {
+    requireOwner({ user_id, anonymous_user_id });
+
+    let query = getSupabaseAdmin()
+      .from("user_profiles")
+      .select("cognitive_summary")
+      .limit(1)
+      .maybeSingle();
+
+    query = applyOwnerFilter(query, { user_id, anonymous_user_id });
+
+    const { data, error } = await query;
+    return result(data?.cognitive_summary || null, error);
+  } catch (error) {
+    return result(null, error);
+  }
+}
+
+async function updateCognitiveSummary({
+  user_id = null,
+  anonymous_user_id = null,
+  cognitive_summary,
+} = {}) {
+  try {
+    requireOwner({ user_id, anonymous_user_id });
+
+    if (!cognitive_summary) {
+      throw new Error("cognitive_summary is required.");
+    }
+
+    const supabase = getSupabaseAdmin();
+    let query = supabase
+      .from("user_profiles")
+      .update({ cognitive_summary, updated_at: new Date().toISOString() });
 
     query = applyOwnerFilter(query, { user_id, anonymous_user_id });
 
@@ -435,4 +506,7 @@ module.exports = {
   saveUserMemory,
   getUserMemories,
   getUserProfile,
+  getGrowthRecords,
+  getCognitiveSummary,
+  updateCognitiveSummary,
 };

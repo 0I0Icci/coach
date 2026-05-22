@@ -112,6 +112,7 @@ alter table public.user_profiles
   add column if not exists communication_style_description text,
   add column if not exists cognitive_stack jsonb not null default '[]'::jsonb,
   add column if not exists test_answers jsonb not null default '[]'::jsonb,
+  add column if not exists cognitive_summary jsonb,
   add column if not exists created_at timestamptz not null default now(),
   add column if not exists updated_at timestamptz not null default now();
 

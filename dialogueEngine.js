@@ -496,7 +496,8 @@ function buildDialogueSystemPrompt({
   cognitiveStack,
   memoryContext,
   sessionState,
-  userMessage
+  userMessage,
+  cognitiveSummary
 }) {
   const styleKey = STYLE_LABELS[communicationStyle] || 'reflection_first';
   const strategy = STYLE_STRATEGIES[styleKey] || STYLE_STRATEGIES.reflection_first;
@@ -628,6 +629,19 @@ function buildDialogueSystemPrompt({
   const checkInstruction = buildCheckUnderstandingInstruction(sessionState);
   if (checkInstruction) {
     parts.push(checkInstruction);
+    parts.push('');
+  }
+
+  if (cognitiveSummary) {
+    const cs = typeof cognitiveSummary === 'object' ? cognitiveSummary : {};
+    parts.push('=== 认知摘要（用户的长期认知模式，仅供参考） ===');
+    if (cs.thinking_habits) parts.push(`思维习惯：${cs.thinking_habits.join('、')}`);
+    if (cs.recurring_themes) parts.push(`反复主题：${cs.recurring_themes.join('、')}`);
+    if (cs.emotional_patterns) parts.push(`情绪模式：${cs.emotional_patterns}`);
+    if (cs.cognitive_progress) parts.push(`认知进展：${cs.cognitive_progress}`);
+    if (cs.recent_focus) parts.push(`近期成长方向：${cs.recent_focus}`);
+    if (cs.suggested_approach) parts.push(`建议对话方式：${cs.suggested_approach}`);
+    parts.push('注意：这是基于过往对话生成的模式观察，不是对用户的定义。随时准备被用户纠正。');
     parts.push('');
   }
 
